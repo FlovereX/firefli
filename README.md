@@ -81,7 +81,7 @@
       Don't know how to install? –– <a href="https://docs.firefli.net">Visit our documentation!</a>
     </li>
     <li>
-      🐛 Bugs? Need help? –– <a href="https://feedback.firefli.net/bugs">Get support and let us know here!</a>
+      🐛 Bugs? Have ideas? –– <a href="https://feedback.firefli.net/bugs">Get support and let us know here!</a>
     </li>
     <li>
       ✨ Updates –– <a href="https://feedback.firefli.net/changelog">View our Features and updates!</a>
