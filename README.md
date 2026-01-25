@@ -22,8 +22,8 @@
   </p>
   <h2>Why consider</h2>
   <p>
-    NEW - Transfer your old Orbit self hosted instance directly to Firefli!
-	Firefli uses the same database format allowing users to swap easier than ever.
+    Firefli is the same much loved Orbit concept but with a sleek new design.
+	You'll feel right at home with the same cosy and simple to use UI.
   </p>
   <ul>
     <li>
