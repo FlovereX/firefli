@@ -130,7 +130,7 @@ const Login: NextPage = () => {
 					<FormProvider {...methods}>
 						<form className="mt-2" onSubmit={handleSubmit(nextSlide)}>
 							<Input
-								placeholder="15224071"
+								placeholder="752856518"
 								label="Group ID"
 								id="groupid"
 								{...register("groupid", { 
