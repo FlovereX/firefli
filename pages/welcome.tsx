@@ -104,7 +104,7 @@ const Login: NextPage = () => {
 		"bg-sky-400",
 		"bg-indigo-400",
 		"bg-violet-400",
-		"bg-firefli",
+		"bg-pink-600",
 		"bg-rose-600",
 		"bg-orange-600",
 		"bg-amber-600",
