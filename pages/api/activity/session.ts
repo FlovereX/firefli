@@ -96,15 +96,13 @@ export async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
       let gameName = null;
       if (placeid) {
         try {
-          const universeInfo: any = await noblox.getUniverseInfo(
-            Number(placeid)
-          );
+          const universeInfo: any = await noblox.getUniverseInfo(Number(placeid));
           if (universeInfo && universeInfo[0] && universeInfo[0].name) {
             gameName = universeInfo[0].name;
           }
         } catch (error) {
           console.log(
-            `[WARNING] Could not fetch universe info for place ${placeid}`
+            `[WARNING] Could not fetch universe info for place ${placeid}:`, error
           );
         }
       }

@@ -37,17 +37,27 @@ export async function handler(
 		});
 	}
 
-	const universeInfo: any[] = await getUniverseInfo(Number(session.universeId)) as any;
+	try {
+		const universeInfo: any[] = await getUniverseInfo(Number(session.universeId)) as any;
 
-	const { data, status } = await axios.get(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${session.universeId}&size=768x432&format=Png&isCircular=false`);
-	if(status !== 200) return res.status(500).json({ success: false, error: "Unexpected error" });
+		const { data, status } = await axios.get(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${session.universeId}&size=768x432&format=Png&isCircular=false`);
+		const universeName = universeInfo?.[0]?.name || "Unknown Game";
+		const universeThumbnail = data?.data?.[0]?.thumbnails?.[0]?.imageUrl || null;
 
-	return res.status(200).json({
-		success: true,
-		message: (JSON.parse(JSON.stringify(session, (key, value) => (typeof value === 'bigint' ? value.toString() : value))) as typeof session),
-		universe: {
-			name: universeInfo[0].name,
-			thumbnail: data.data[0].thumbnails[0].imageUrl
-		}
-	});
+		return res.status(200).json({
+			success: true,
+			message: (JSON.parse(JSON.stringify(session, (key, value) => (typeof value === 'bigint' ? value.toString() : value))) as typeof session),
+			universe: {
+				name: universeName,
+				thumbnail: universeThumbnail
+			}
+		});
+	} catch (error) {
+		console.error("Failed to fetch universe info:", error);
+		return res.status(200).json({
+			success: true,
+			message: (JSON.parse(JSON.stringify(session, (key, value) => (typeof value === 'bigint' ? value.toString() : value))) as typeof session),
+			universe: undefined
+		});
+	}
 }
