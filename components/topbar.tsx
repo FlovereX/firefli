@@ -33,7 +33,7 @@ const Topbar: NextPage = () => {
 					<div className="flex items-center space-x-4">
 						<img
 							src='/firefli.png'
-							className="h-8 w-32"
+							className="h-8 w-auto"
 							alt="Firefli logo"
 						/>
 						<ThemeToggle />
