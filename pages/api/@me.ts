@@ -66,12 +66,20 @@ export async function handler(
 		getUsername(userId),
 		getDisplayName(userId)
 	]);
+	let canMakeWorkspace = dbuser?.isOwner || false;
+	if (process.env.NEXT_PUBLIC_FIREFLI_LIMIT === 'true') {
+		const existingWorkspace = await prisma.workspace.findFirst({
+			where: { ownerId: userId },
+			select: { groupId: true }
+		});
+		canMakeWorkspace = !existingWorkspace;
+	}
 
 	const user: User = {
 		userId: userId,
 		username,
 		displayname,
-		canMakeWorkspace: dbuser?.isOwner || false,
+		canMakeWorkspace,
 		thumbnail: getThumbnail(userId),
 		registered: dbuser?.registered || false,
 		birthdayDay: dbuser?.birthdayDay ?? null,
@@ -102,11 +110,17 @@ export async function handler(
 	res.status(200).json(response);
 	setImmediate(async () => {
 		try {
-			await prisma.user.update({
+			await prisma.user.upsert({
 				where: {
 					userid: userId
 				},
-				data: {
+				update: {
+					picture: getThumbnail(userId),
+					username: await getUsername(userId),
+					registered: true
+				},
+				create: {
+					userid: userId,
 					picture: getThumbnail(userId),
 					username: await getUsername(userId),
 					registered: true

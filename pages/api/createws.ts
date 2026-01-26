@@ -67,12 +67,6 @@ export async function handler(
 	if (!urrole) return res.status(400).json({ success: false, error: 'You are not a high enough rank' })
 	if (urrole < 10) return res.status(400).json({ success: false, error: 'You are not a high enough rank' })
 
-	await prisma.user.upsert({
-		where: { userid: req.session.userid },
-		update: {},
-		create: { userid: req.session.userid }
-	})
-
 	let groupName = `Group ${groupId}`;
 	let groupLogo = '';
 	
@@ -88,13 +82,19 @@ export async function handler(
 	}
 
 	  const workspace = await prisma.$transaction(async (tx) => {
+		await tx.user.upsert({
+			where: { userid: req.session.userid },
+			update: {},
+			create: { userid: req.session.userid }
+		})
+
 		const ws = await tx.workspace.create({
 			data: {
 		  groupId,
 		  groupName,
 		  groupLogo,
-		  lastSynced: new Date()
-		  //ownerId: BigInt(req.session.userid)
+		  lastSynced: new Date(),
+		  ownerId: req.session.userid
 			}
 		})
 
@@ -185,13 +185,13 @@ export async function handler(
 	})
 
 	// Run initial role sync synchronously to populate cache before returning
-	try {
-		const { checkGroupRoles } = await import('@/utils/permissionsManager');
-		await checkGroupRoles(groupId);
-		console.log(`[createws] Completed initial sync for workspace ${groupId}`);
-	} catch (err) {
-		console.error(`[createws] Failed to complete initial sync:`, err);
-	}
+	//try {
+	//	const { checkGroupRoles } = await import('@/utils/permissionsManager');
+	//	await checkGroupRoles(groupId);
+	//	console.log(`[createws] Completed initial sync for workspace ${groupId}`);
+	//} catch (err) {
+	//	console.error(`[createws] Failed to complete initial sync:`, err);
+	//}
 
 	return res.status(200).json({ success: true, workspaceGroupId: workspace.groupId })
 }

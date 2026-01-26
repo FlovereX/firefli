@@ -8,7 +8,7 @@ datasource db {
 
 model workspace {
   groupId           Int                        @id @unique
-  ownerId           Int?
+  ownerId           BigInt?
   groupName         String?
   groupLogo         String?
   lastSynced        DateTime?
@@ -385,8 +385,8 @@ model rank {
   userId           BigInt
   rankId           BigInt
   workspaceGroupId Int
-  user             user      @relation(fields: [userId], references: [userid])
-  workspace        workspace @relation(fields: [workspaceGroupId], references: [groupId])
+  user             user      @relation(fields: [userId], references: [userid], onDelete: Cascade)
+  workspace        workspace @relation(fields: [workspaceGroupId], references: [groupId], onDelete: Cascade)
 
   @@id([userId, workspaceGroupId])
 }
