@@ -22,7 +22,7 @@ interface Announcement {
 
 const defaultAnnouncement: Announcement = {
   title: "Firefli",
-  subtitle: "Update: v2.1.8 is now live!",
+  subtitle: "Update: v1.0.1 is now live!",
   sections: [
     {
       title: "",
@@ -160,7 +160,7 @@ export default function StickyNoteAnnouncement() {
   return (
     <div className="z-0 bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-xl shadow-sm p-4 flex items-start space-x-4 mb-6 relative">
       <img
-        src="/favicon-32x32.png"
+        src="/favicon.png"
         alt="Firefli"
         className="w-10 h-10 rounded-full bg-primary flex-shrink-0"
       />
