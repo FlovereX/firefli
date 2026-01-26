@@ -22,6 +22,7 @@ const Home: NextPage = () => {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [isOwner, setIsOwner] = useState(false)
+  const canCreateWorkspace = process.env.NEXT_PUBLIC_FIREFLI_LIMIT === 'true' || (!process.env.NEXT_PUBLIC_FIREFLI_LIMIT && isOwner)
 
   const gotoWorkspace = (id: number) => {
     router.push(`/workspace/${id}`)
@@ -136,7 +137,7 @@ const Home: NextPage = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
             <h1 className="text-3xl font-bold text-zinc-900 dark:text-white mb-4 sm:mb-0">Your Workspaces</h1>
             <div className="flex space-x-3">
-              {isOwner && (
+              {canCreateWorkspace && (
                 <Button onClick={() => setIsOpen(true)} classoverride="flex items-center">
                   <IconPlus className="mr-2 h-5 w-5" />
                   New Workspace
@@ -180,9 +181,9 @@ const Home: NextPage = () => {
               </div>
               <h3 className="text-xl font-semibold text-zinc-900 dark:text-white mb-2">No workspaces available</h3>
               <p className="text-zinc-500 dark:text-zinc-400 mb-6">
-                {isOwner ? "Create a new workspace to get started" : "You don't have permission to create workspaces"}
+                {canCreateWorkspace ? "Create a new workspace to get started" : "You don't have permission to create workspaces"}
               </p>
-              {isOwner ? (
+              {canCreateWorkspace ? (
                 <Button onClick={() => setIsOpen(true)} classoverride="flex items-center">
                   <IconPlus className="mr-2 h-5 w-5" />
                   Create Workspace
