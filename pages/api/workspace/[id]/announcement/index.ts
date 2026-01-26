@@ -59,12 +59,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
 
     const defaultAnnouncement = {
       title: "Firefli",
-      subtitle: "Update: v2.1.8 is now live!",
+      subtitle: "Update: v1.0.2 is now live!",
       sections: [
         {
           title: "",
           content:
-            "We're keeping this going with a well needed update. Here are a few highlights from this week's work and community feedback.",
+            "We're starting off strong with some well needed changes.",
         },
         {
           title: "💼 Permissions",
@@ -72,14 +72,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
             "We now have over 50 permissions available to assign to roles!",
         },
         {
-          title: "🧹",
+          title: "🧹 Bug Cleanup",
           content:
-            "Improved overall performance and stability across the board.",
+            "Tidied up Orbits bugs making way for the future.",
         },
         {
           title: "",
           content:
-            "That's a wrap for this week — we'll see you soon for more updates from Team Planetary.",
+            "That's a wrap for this week — we'll see you soon for more updates from Team Firefli.",
         },
       ],
       editorUsername: null,
