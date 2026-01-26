@@ -56,7 +56,7 @@ interface SidebarProps {
 
 const ChangelogContent: React.FC<{ workspaceId: number }> = ({ workspaceId }) => {
   const [entries, setEntries] = useState<
-    { title: string; link: string; pubDate: string; content: string }[]
+    { title: string; pubDate: string; content: string }[]
   >([]);
   const [loading, setLoading] = useState(true);
 
@@ -107,7 +107,7 @@ const Sidebar: NextPage<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const [showCopyright, setShowCopyright] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [showChangelog, setShowChangelog] = useState(false);
-  const [changelog, setChangelog] = useState<{ title: string, link: string, pubDate: string, content: string }[]>([]);
+  const [changelog, setChangelog] = useState<{ title: string, pubDate: string, content: string }[]>([]);
   const [docsEnabled, setDocsEnabled] = useState(false);
   const [alliesEnabled, setAlliesEnabled] = useState(false);
   const [sessionsEnabled, setSessionsEnabled] = useState(false);
