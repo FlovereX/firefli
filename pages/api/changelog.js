@@ -7,7 +7,6 @@ export default async function handler(req, res) {
 		const feed = await parser.parseURL(FEED_URL);
 		const items = (feed.items || []).map((item) => ({
 			title: item.title || "",
-			link: item.link || "",
 			pubDate: item.pubDate || item.isoDate || "",
 			content: item["content:encoded"] || item.content || "",
 		}));
@@ -18,7 +17,6 @@ export default async function handler(req, res) {
 			const channel = {
 				title: feed.title || "",
 				description: feed.description || "",
-				link: feed.link || "",
 				lastBuildDate: feed.lastBuildDate || "",
 			};
 			return res.status(200).json({ channel, items });
