@@ -26,6 +26,15 @@ const workspace: LayoutProps = ({ children }) => {
 	const [open, setOpen] = useState(true);
 
 	const useTheme = (groupTheme: string) => {
+		// Handle custom colors
+		if (groupTheme && groupTheme.startsWith("custom-")) {
+			const hex = groupTheme.replace("custom-", "");
+			const r = parseInt(hex.substring(0, 2), 16);
+			const g = parseInt(hex.substring(2, 4), 16);
+			const b = parseInt(hex.substring(4, 6), 16);
+			return `${r} ${g} ${b}`;
+		}
+
 		const themes: Record<string, string> = {
 			"bg-pink-100": colors.pink[100],
 			"bg-rose-100": colors.rose[100],

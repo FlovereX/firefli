@@ -27,6 +27,7 @@ const Color: FC<props> = ({ triggerToast, isSidebarExpanded }) => {
   const [selectedColor, setSelectedColor] = useState<string>(
     workspace?.groupTheme || ""
   );
+  const [customColor, setCustomColor] = useState<string>("#3498db");
   const [sessionColors, setSessionColors] = useState<SessionColors>({
     recurring: "bg-blue-500",
     shift: "bg-green-500",
@@ -35,10 +36,16 @@ const Color: FC<props> = ({ triggerToast, isSidebarExpanded }) => {
     other: "bg-zinc-500",
   });
   const [isLoadingSessionColors, setIsLoadingSessionColors] = useState(false);
+  const [colorPickerTimeout, setColorPickerTimeout] = useState<NodeJS.Timeout | null>(null);
+  const isFirefliApp = process.env.NEXT_PUBLIC_NEXTAUTH_URL === "https://app.firefli.net";
 
   useEffect(() => {
     if (workspace?.groupTheme) {
       setSelectedColor(workspace.groupTheme);
+      if (workspace.groupTheme.startsWith("custom-")) {
+        const hexValue = workspace.groupTheme.replace("custom-", "");
+        setCustomColor(`#${hexValue}`);
+      }
     }
   }, [workspace?.groupTheme]);
 
@@ -84,6 +91,50 @@ const Color: FC<props> = ({ triggerToast, isSidebarExpanded }) => {
         triggerToast.success("Workspace color updated successfully!");
       } else {
         triggerToast.error("Failed to update color.");
+        handleRevert();
+      }
+    } catch (error) {
+      triggerToast.error("Something went wrong.");
+      handleRevert();
+    }
+  };
+
+  const handleCustomColorChange = (hexColor: string) => {
+    setCustomColor(hexColor);
+    if (colorPickerTimeout) {
+      clearTimeout(colorPickerTimeout);
+    }
+    const colorKey = `custom-${hexColor.replace("#", "")}`;
+    setSelectedColor(colorKey);
+    const hex = hexColor.replace("#", "");
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const rgbValue = `${r} ${g} ${b}`;
+    document.documentElement.style.setProperty("--group-theme", rgbValue)
+    const timeout = setTimeout(() => {
+      updateCustomColor(hexColor);
+    }, 500);
+    setColorPickerTimeout(timeout);
+  };
+
+  const updateCustomColor = async (hexColor: string) => {
+    try {
+      const colorKey = `custom-${hexColor.replace("#", "")}`;
+      setWorkspace((prev) => ({
+        ...prev,
+        groupTheme: colorKey,
+      }));
+
+      const res = await axios.patch(
+        `/api/workspace/${workspace.groupId}/settings/general/color`,
+        { color: colorKey }
+      );
+
+      if (res.status === 200) {
+        triggerToast.success("Custom color saved!");
+      } else {
+        triggerToast.error("Failed to save custom color.");
         handleRevert();
       }
     } catch (error) {
@@ -215,22 +266,61 @@ const Color: FC<props> = ({ triggerToast, isSidebarExpanded }) => {
           Choose a color theme for your workspace
         </p>
         <div className="grid grid-cols-10 gap-3">
-          {colors.map((color, i) => (
-            <button
-              key={i}
-              onClick={() => updateColor(color)}
-              className={clsx(
-                "relative aspect-square rounded-lg transition-transform hover:scale-105 z-0",
-                color
-              )}
-            >
-              {selectedColor === color && (
-                <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/30 rounded-lg">
-                  <IconCheck size={16} className="text-white" />
-                </div>
-              )}
-            </button>
-          ))}
+          {isFirefliApp ? (
+            <>
+              <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-dashed border-zinc-300 dark:border-zinc-600 hover:border-primary dark:hover:border-primary transition-all group">
+                <input
+                  type="color"
+                  value={customColor}
+                  onChange={(e) => handleCustomColorChange(e.target.value)}
+                  className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
+                  title="Custom Color"
+                />
+                <div 
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ backgroundColor: customColor }}
+                />
+                {selectedColor.startsWith("custom-") && (
+                  <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/30 rounded-lg pointer-events-none">
+                    <IconCheck size={16} className="text-white" />
+                  </div>
+                )}
+              </div>
+              {colors.slice(1).map((color, i) => (
+                <button
+                  key={i}
+                  onClick={() => updateColor(color)}
+                  className={clsx(
+                    "relative aspect-square rounded-lg transition-transform hover:scale-105 z-0",
+                    color
+                  )}
+                >
+                  {selectedColor === color && (
+                    <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/30 rounded-lg">
+                      <IconCheck size={16} className="text-white" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </>
+          ) : (
+            colors.map((color, i) => (
+              <button
+                key={i}
+                onClick={() => updateColor(color)}
+                className={clsx(
+                  "relative aspect-square rounded-lg transition-transform hover:scale-105 z-0",
+                  color
+                )}
+              >
+                {selectedColor === color && (
+                  <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/30 rounded-lg">
+                    <IconCheck size={16} className="text-white" />
+                  </div>
+                )}
+              </button>
+            ))
+          )}
         </div>
       </div>
       <div>
@@ -304,6 +394,7 @@ const Color: FC<props> = ({ triggerToast, isSidebarExpanded }) => {
 
 function getColorDisplayName(color: string): string {
   const colorDisplayMap: Record<string, string> = {
+    "bg-firefli": "Firefli",
     "bg-blue-500": "Blue",
     "bg-red-500": "Red",
     "bg-red-700": "Dark Red",
@@ -333,7 +424,16 @@ function getRGBFromTailwindColor(tw: any): string {
     return "0, 112, 240";
   }
 
+  if (colorName.startsWith("custom-")) {
+    const hex = colorName.replace("custom-", "");
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return `${r} ${g} ${b}`;
+  }
+
   const colorMap: Record<string, string> = {
+    "firefli": "52, 152, 219",
     "blue-500": "59, 130, 246",
     "red-500": "239, 68, 68",
     "red-700": "185, 28, 28",
