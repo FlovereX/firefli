@@ -766,7 +766,7 @@ const PoliciesPage: pageWithLayout<pageProps> = ({
                 ) : (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                      <div className="bg-white dark:bg-zinc-800 rounded-lg p-4 shadow-sm">
+                      <div className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-lg p-4 shadow-sm">
                         <div className="flex items-center">
                           <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
                             <IconFileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -839,7 +839,7 @@ const PoliciesPage: pageWithLayout<pageProps> = ({
                         return (
                           <div
                             key={document.id}
-                            className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm p-4"
+                            className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-lg shadow-sm p-4"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-start space-x-4">
@@ -957,7 +957,7 @@ const PoliciesPage: pageWithLayout<pageProps> = ({
                       })}
 
                       {documents.length === 0 && (
-                        <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm p-8 text-center">
+                        <div className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-lg shadow-sm p-8 text-center">
                           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
                             <IconShield className="w-8 h-8 text-primary" />
                           </div>
@@ -989,7 +989,7 @@ const PoliciesPage: pageWithLayout<pageProps> = ({
                 {complianceData ? (
                   <div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                      <div className="bg-white dark:bg-zinc-800 rounded-lg p-4">
+                      <div className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-lg p-4">
                         <div className="text-2xl font-bold text-zinc-900 dark:text-white">
                           {complianceData.overallStats.averageComplianceRate}%
                         </div>
@@ -997,7 +997,7 @@ const PoliciesPage: pageWithLayout<pageProps> = ({
                           Average Compliance
                         </div>
                       </div>
-                      <div className="bg-white dark:bg-zinc-800 rounded-lg p-4">
+                      <div className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-lg p-4">
                         <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                           {complianceData.overallStats.fullyCompliantCount}
                         </div>
@@ -1005,7 +1005,7 @@ const PoliciesPage: pageWithLayout<pageProps> = ({
                           Fully Compliant
                         </div>
                       </div>
-                      <div className="bg-white dark:bg-zinc-800 rounded-lg p-4">
+                      <div className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-lg p-4">
                         <div className="text-2xl font-bold text-red-600 dark:text-red-400">
                           {complianceData.overallStats.overdueCount}
                         </div>
@@ -1013,7 +1013,7 @@ const PoliciesPage: pageWithLayout<pageProps> = ({
                           Overdue
                         </div>
                       </div>
-                      <div className="bg-white dark:bg-zinc-800 rounded-lg p-4">
+                      <div className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-lg p-4">
                         <div className="text-2xl font-bold text-zinc-900 dark:text-white">
                           {complianceData.totalPolicies}
                         </div>
@@ -1023,7 +1023,7 @@ const PoliciesPage: pageWithLayout<pageProps> = ({
                       </div>
                     </div>
 
-                    <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-lg shadow-sm overflow-hidden">
                       <div className="p-4 border-b border-zinc-200 dark:border-zinc-700">
                         <div className="flex items-center justify-between">
                           <h3 className="text-lg font-medium text-zinc-900 dark:text-white">
@@ -1165,7 +1165,7 @@ const PoliciesPage: pageWithLayout<pageProps> = ({
             )}
 
             {selectedView === "create" && (
-              <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
+              <div className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-lg shadow-sm">
                 <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-700">
                   <div className="flex items-center justify-between">
                     <div>
@@ -1930,7 +1930,7 @@ const PoliciesPage: pageWithLayout<pageProps> = ({
             )}
 
             {selectedView === "edit" && (
-              <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
+              <div className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-lg shadow-sm">
                 <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-700">
                   <div className="flex items-center justify-between">
                     <div>
@@ -2622,7 +2622,7 @@ const PoliciesPage: pageWithLayout<pageProps> = ({
 
         {showComplianceModal && selectedPolicyForModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
               <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-700">
                 <div className="flex items-center justify-between">
                   <div>
@@ -2875,7 +2875,7 @@ const PoliciesPage: pageWithLayout<pageProps> = ({
 
         {showDeleteModal && policyToDelete && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
+            <div className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
               <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
                 Confirm Deletion
               </h2>
