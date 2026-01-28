@@ -437,13 +437,13 @@ const workspace: LayoutProps = ({ children }) => {
 	const showSecondarySidebar = !!getSecondarySidebar;
 	const workspaceBg = workspace && workspace.groupTheme ? "" : "bg-firefli";
 	return (
-		<div className={clsx("h-screen overflow-hidden bg-white/80 dark:bg-zinc-800/80", workspaceBg)}> 
+		<div className={clsx("h-screen-safe overflow-hidden bg-white/80 dark:bg-zinc-800/80", workspaceBg)}> 
 		<Head>
 			<title>{workspace.groupName ? `Firefli - ${workspace.groupName}` : "Loading..."}</title>
 			<link rel="icon" href={`${workspace.groupThumbnail}`} />
 			</Head>
 
-			<div className="flex flex-col h-screen">
+			<div className="flex flex-col h-screen-safe">
 				<Topbar />
 				<div className="flex flex-1 overflow-hidden">
 					<Sidebar />

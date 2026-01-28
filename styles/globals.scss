@@ -11,6 +11,16 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+.h-screen-safe {
+  height: 100vh;
+  height: 100dvh;
+}
+
+.min-h-screen-safe {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 html.dark,
 html.dark body {
   background-color: #18181B;
