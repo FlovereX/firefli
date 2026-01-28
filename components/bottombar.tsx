@@ -83,6 +83,7 @@ const BottomBar: NextPage = () => {
   const gotoPage = (href: string) => {
     router.push(href)
     setShowMore(false)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   // Filter main pages by accessibility
