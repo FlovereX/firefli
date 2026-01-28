@@ -5,6 +5,7 @@ import { themeState } from "@/state/theme"
 import { useRecoilState } from "recoil"
 import { Menu, Listbox, Dialog, Transition } from "@headlessui/react"
 import { useRouter } from "next/router"
+import ThemeToggle from "./ThemeToggle";
 import {
   Home,
   HomeOutlined,
@@ -174,6 +175,7 @@ const Sidebar: NextPage = () => {
     filledIcon?: React.ElementType;
     accessible?: boolean;
     href?: string;
+    matchPaths?: string[];
   };
 
   const getSections = (): SectionConfig[] => {
@@ -198,56 +200,41 @@ const Sidebar: NextPage = () => {
       href: `/workspace/${workspace.groupId}/activity`,
       icon: AssignmentOutlined, 
       filledIcon: Assignment,
-      accessible: true
-    },
-    { 
-      name: "Leaderboard", 
-      href: `/workspace/${workspace.groupId}/leaderboard`,
-      icon: EmojiEventsOutlined, 
-      filledIcon: EmojiEvents,
-      accessible: true
-    },
-    ...(sessionsEnabled ? [{
-      name: "Sessions",
-      href: `/workspace/${workspace.groupId}/sessions`,
-      icon: NotificationsOutlined,
-      filledIcon: Notifications,
       accessible: true,
-    }] : []),
-    ...(alliesEnabled ? [{
-      name: "Alliances",
-      href: `/workspace/${workspace.groupId}/alliances`,
-      icon: HandshakeOutlined,
-      filledIcon: Handshake,
+      matchPaths: [
+        `/workspace/${workspace.groupId}/activity`,
+        `/workspace/${workspace.groupId}/leaderboard`,
+        `/workspace/${workspace.groupId}/sessions`,
+      ]
+    },
+    ...((docsEnabled || policiesEnabled) ? [{ 
+      name: "Docs", 
+      href: docsEnabled ? `/workspace/${workspace.groupId}/docs` : `/workspace/${workspace.groupId}/policies`, 
+      icon: DescriptionOutlined, 
+      filledIcon: Description, 
       accessible: true,
+      matchPaths: [
+        `/workspace/${workspace.groupId}/docs`,
+        `/workspace/${workspace.groupId}/policies`,
+      ]
     }] : []),
     { 
       name: "Staff", 
       href: `/workspace/${workspace.groupId}/views`,
       icon: PersonOutlined, 
       filledIcon: Person,
-      accessible: workspace.yourPermission?.includes("view_members")
+      accessible: workspace.yourPermission?.includes("view_members"),
+      matchPaths: [
+        `/workspace/${workspace.groupId}/views`,
+        `/workspace/${workspace.groupId}/notices`,
+      ]
     },
-    ...(noticesEnabled ? [{
-      name: "Notices",
-      href: `/workspace/${workspace.groupId}/notices`,
-      icon: ScheduleOutlined,
-      filledIcon: Schedule,
+    ...(alliesEnabled ? [{
+      name: "Alliances",
+      href: `/workspace/${workspace.groupId}/alliances`,
+      icon: HandshakeOutlined,
+      filledIcon: Handshake,
       accessible: true,
-    }] : []),
-    ...(docsEnabled ? [{ 
-      name: "Docs", 
-      href: `/workspace/${workspace.groupId}/docs`, 
-      icon: DescriptionOutlined, 
-      filledIcon: Description, 
-      accessible: true 
-    }] : []),
-    ...(policiesEnabled ? [{ 
-      name: "Policies", 
-      href: `/workspace/${workspace.groupId}/policies`, 
-      icon: ShieldOutlined, 
-      filledIcon: Shield, 
-      accessible: true 
     }] : []),
   ];
   };
@@ -265,7 +252,6 @@ const Sidebar: NextPage = () => {
     { name: "Home", href: `/workspace/${workspace.groupId}`, icon: HomeOutlined, filledIcon: Home },
     { name: "Wall", href: `/workspace/${workspace.groupId}/wall`, icon: ChatOutlined, filledIcon: Chat, accessible: workspace.yourPermission.includes("view_wall") },
     { name: "Activity", href: `/workspace/${workspace.groupId}/activity`, icon: AssignmentOutlined, filledIcon: Assignment, accessible: true },
-    { name: "Quotas", href: `/workspace/${workspace.groupId}/quotas`, icon: TrackChanges, accessible: true },
    ...(noticesEnabled ? [{
       name: "Notices",
       href: `/workspace/${workspace.groupId}/notices`,
@@ -373,79 +359,83 @@ const Sidebar: NextPage = () => {
 
   return (
     <div className="hidden md:flex h-full flex-row">
-      {/* Main sidebar - always expanded on desktop */}
       <aside
         className={clsx(
           "h-full flex flex-col pointer-events-auto shadow-xl transition-all duration-300",
           "bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm",
-          "w-56 min-w-[14rem]",
+          "w-16 min-w-[4rem]",
         )}
       >
-        <div className="h-full flex flex-col p-3 overflow-y-auto pb-3">
-          <nav className="flex-1 space-y-1">
-            {sections.map((section) =>
-              (section.accessible === undefined || section.accessible) && (
-                <button
-                  key={section.name}
-                  onClick={() => {
-                    if (section.href) {
-                      gotopage(section.href);
-                    }
-                  }}
-                  className={clsx(
-                    "rounded-lg text-sm font-medium transition-all duration-300 relative flex items-center gap-3 px-3 py-2 w-full",
-                    (section.href && router.asPath === section.href.replace("[id]", workspace.groupId.toString()))
-                      ? "bg-[color:rgb(var(--group-theme)/0.1)] text-[color:rgb(var(--group-theme))] font-semibold"
-                      : "text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-700",
-                  )}
-                >
-                  <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-                    {(() => {
-                      const isActive = (section.href && router.asPath === section.href.replace("[id]", workspace.groupId.toString()));
-                      const IconComponent: React.ElementType = isActive
-                        ? section.filledIcon || section.icon
-                        : section.icon;
-                      return <IconComponent className="w-5 h-5" />;
-                    })()}
-                  </div>
-                  <span className="truncate">{section.name}</span>
-                  {section.name === "Policies" && pendingPolicyCount > 0 && (
-                    <span className="ml-auto w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center flex-shrink-0">
-                      {pendingPolicyCount}
-                    </span>
-                  )}
-                  {section.name === "Activity" && pendingNoticesCount > 0 && (
-                    <span className="ml-auto w-5 h-5 bg-amber-500 text-white text-xs font-bold rounded-full flex items-center justify-center flex-shrink-0">
-                      {pendingNoticesCount}
-                    </span>
-                  )}
-                </button>
-              )
-            )}
+        <div className="h-full flex flex-col p-2 overflow-y-auto pb-3">
+          <nav className="flex-1 space-y-1 flex flex-col items-center">
+            {sections.map((section) => {
+              if (section.accessible === undefined || section.accessible) {
+                const isActive = section.matchPaths 
+                  ? section.matchPaths.some(path => router.asPath.startsWith(path))
+                  : (section.href && router.asPath === section.href.replace("[id]", workspace.groupId.toString()));
+                const IconComponent: React.ElementType = isActive
+                  ? section.filledIcon || section.icon
+                  : section.icon;
+                
+                return (
+                  <button
+                    key={section.name}
+                    onClick={() => {
+                      if (section.href) {
+                        gotopage(section.href);
+                      }
+                    }}
+                    title={section.name}
+                    className={clsx(
+                      "rounded-lg transition-all duration-300 relative flex items-center justify-center w-12 h-12",
+                      isActive
+                        ? "bg-[color:rgb(var(--group-theme)/0.1)] text-[color:rgb(var(--group-theme))]"
+                        : "text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-700",
+                    )}
+                  >
+                    <IconComponent className="w-5 h-5" />
+                    {section.name === "Docs" && pendingPolicyCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                        {pendingPolicyCount > 9 ? '9+' : pendingPolicyCount}
+                      </span>
+                    )}
+                    {section.name === "Staff" && pendingNoticesCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                        {pendingNoticesCount > 9 ? '9+' : pendingNoticesCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              }
+              return null;
+            })}
           </nav>
-
-          {/* Settings button */}
+          <div className="flex justify-center">
+            <div className="rounded-lg transition-all duration-300 flex items-center justify-center w-12 h-12 hover:bg-zinc-100 dark:hover:bg-zinc-700">
+              <ThemeToggle />
+            </div>
+          </div>
           {settingsAccessible && (
-            <button
-              onClick={() => {
-                gotopage(settingsHref);
-              }}
-              className={clsx(
-                "rounded-lg text-sm font-medium transition-all duration-300 mb-1 flex items-center gap-3 px-3 py-2 w-full",
-                isSettingsActive
-                  ? "bg-[color:rgb(var(--group-theme)/0.1)] text-[color:rgb(var(--group-theme))] font-semibold"
-                  : "text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-700",
-              )}
-            >
-              <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+            <div className="flex justify-center">
+              <button
+                onClick={() => {
+                  gotopage(settingsHref);
+                }}
+                title="Settings"
+                className={clsx(
+                  "rounded-lg transition-all duration-300 flex items-center justify-center w-12 h-12",
+                  isSettingsActive
+                    ? "bg-[color:rgb(var(--group-theme)/0.1)] text-[color:rgb(var(--group-theme))]"
+                    : "text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-700",
+                )}
+              >
                 {isSettingsActive ? (
                   <Settings className="w-5 h-5" />
                 ) : (
                   <SettingsOutlined className="w-5 h-5" />
                 )}
-              </div>
-              <span className="truncate">Settings</span>
-            </button>
+              </button>
+            </div>
           )}
         </div>
       </aside>

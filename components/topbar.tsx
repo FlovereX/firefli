@@ -6,7 +6,7 @@ import { useRouter } from "next/router";
 import { IconLogout, IconChevronDown, IconPlus, IconCheck } from "@tabler/icons-react";
 import axios from "axios";
 import { Fragment } from "react";
-import ThemeToggle from "./ThemeToggle";
+
 
 const BG_COLORS = [
 	"bg-rose-300",
@@ -152,8 +152,6 @@ const Topbar: NextPage = () => {
 								</div>
 							</Listbox>
 						)}
-						
-						<ThemeToggle />
 					</div>
 
 					<div className="flex items-center space-x-2">
