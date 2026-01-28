@@ -478,7 +478,7 @@ const Sidebar: NextPage = () => {
                   Orbit features, enhancements, and modifications:
                 </h3>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  Copyright © 2025 Planetary. All rights reserved.
+                  Copyright © 2026 Planetary. All rights reserved.
                 </p>
               </div>
 
