@@ -59,7 +59,7 @@ const Topbar: NextPage = () => {
 	}
 
 	return (
-		<header className="sticky top-0 z-50 backdrop-blur-sm bg-white/80 dark:bg-zinc-800/80">
+		<header className="sticky top-0 z-[60] backdrop-blur-sm bg-white/80 dark:bg-zinc-800/80">
 			<div className="w-full px-3">
 				<div className="flex justify-between items-center h-12">
 					<div className="flex items-center space-x-3">
@@ -132,21 +132,30 @@ const Topbar: NextPage = () => {
 														No other workspaces
 													</div>
 												)}
-												{login?.canMakeWorkspace && process.env.NEXT_PUBLIC_FIREFLI_LIMIT === 'true' && (
-													<div 
-														className="flex items-center gap-3 px-3 py-2 cursor-pointer rounded-md transition duration-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 border-t border-zinc-200 dark:border-zinc-700 mt-1"
-													onClick={() => {
-														router.push('/');
-														setCreateWorkspaceModal(true);
-													}}
+											</div>
+											{login?.canMakeWorkspace && process.env.NEXT_PUBLIC_FIREFLI_LIMIT === 'true' && (
+												<div className="border-t border-zinc-200 dark:border-zinc-700 p-2">
+													<button 
+														type="button"
+														className="w-full flex items-center gap-3 px-3 py-2 cursor-pointer rounded-md transition duration-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-left"
+														onMouseDown={(e) => {
+															e.preventDefault();
+															e.stopPropagation();
+														}}
+														onClick={(e) => {
+															e.preventDefault();
+															e.stopPropagation();
+															router.push('/');
+															setCreateWorkspaceModal(true);
+														}}
 													>
 														<div className="w-6 h-6 rounded bg-zinc-100 dark:bg-zinc-600 flex items-center justify-center">
 															<IconPlus className="w-3 h-3 text-zinc-600 dark:text-zinc-300" />
 														</div>
 														<span className="flex-1 text-sm font-medium text-zinc-700 dark:text-white">Create Workspace</span>
-													</div>
-												)}
-											</div>
+													</button>
+												</div>
+											)}
 										</Listbox.Options>
 									</Transition>
 								</div>

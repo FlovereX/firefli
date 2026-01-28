@@ -461,7 +461,7 @@ const workspace: LayoutProps = ({ children }) => {
 
 			<div className="flex flex-col h-screen-safe">
 				<Topbar />
-				<div className="flex flex-1 overflow-hidden sticky top-0 z-50 backdrop-blur-sm bg-white/80 dark:bg-zinc-800/80">
+				<div className="flex flex-1 overflow-hidden">
 					<Sidebar />
 					{getSecondarySidebar ? (
 						<div className="hidden md:flex">
