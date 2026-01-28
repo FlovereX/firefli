@@ -14,14 +14,71 @@ import { useRouter } from "next/router";
 import hexRgb from "hex-rgb";
 import * as colors from "tailwindcss/colors";
 import WorkspaceBirthdayPrompt from '@/components/bdayprompt';
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import clsx from 'clsx';
+import SecondarySidebar, { SecondarySidebarSection, SecondarySidebarItem } from "@/components/tabs";
+import {
+  IconTrophy,
+  IconCalendarStats,
+  IconUsers,
+  IconBeach,
+  IconFilter,
+  IconFileText,
+  IconShield,
+  IconHome,
+  IconHourglassHigh,
+  IconFlag,
+  IconKey,
+  IconLock,
+  IconBellExclamation,
+  IconServer,
+  IconStar,
+  IconSparkles,
+  IconBriefcase,
+  IconTarget,
+  IconAlertTriangle,
+  IconCalendarWeekFilled,
+  IconSpeakerphone,
+  IconFile,
+  IconFolder,
+  IconBox,
+  IconId,
+  IconTools,
+  IconTag,
+  IconPin,
+  IconBell,
+  IconCoffee,
+  IconSchool,
+} from "@tabler/icons-react";
+
+const SAVED_VIEW_ICONS: { [key: string]: any } = {
+  star: IconStar,
+  sparkles: IconSparkles,
+  briefcase: IconBriefcase,
+  target: IconTarget,
+  alert: IconAlertTriangle,
+  calendar: IconCalendarWeekFilled,
+  speakerphone: IconSpeakerphone,
+  file: IconFile,
+  folder: IconFolder,
+  box: IconBox,
+  id: IconId,
+  tools: IconTools,
+  tag: IconTag,
+  pin: IconPin,
+  bell: IconBell,
+  lock: IconLock,
+  coffee: IconCoffee,
+  school: IconSchool,
+};
 
 
 const workspace: LayoutProps = ({ children }) => {
 	const [workspace, setWorkspace] = useRecoilState(workspacestate);
 	const router = useRouter();
 	const [loading, setLoading] = useState(false);
+	const [savedViews, setSavedViews] = useState<Array<{id: string; name: string; color?: string; icon?: string}>>([]);
+	const [savedViewsLoaded, setSavedViewsLoaded] = useState(false);
 
 	const useTheme = (groupTheme: string) => {
 		// Handle custom colors
@@ -80,6 +137,57 @@ const workspace: LayoutProps = ({ children }) => {
 		return `${hex.red} ${hex.green} ${hex.blue}`;
 	};
 
+	const loadSavedViews = useCallback(async () => {
+		if (!router.query.id) return;
+		try {
+			const res = await axios.get(`/api/workspace/${router.query.id}/views`);
+			if (res.data && res.data.views) {
+				setSavedViews(res.data.views || []);
+			}
+		} catch (e) {
+			console.error("Failed to load saved views", e);
+		}
+		setSavedViewsLoaded(true);
+	}, [router.query.id]);
+
+	const deleteSavedView = useCallback(async (viewId: string) => {
+		try {
+			await axios.delete(`/api/workspace/${router.query.id}/views/${viewId}`);
+			setSavedViews((prev) => prev.filter((v) => v.id !== viewId));
+			window.dispatchEvent(new CustomEvent('savedViewsChanged'));
+		} catch (e) {
+			console.error("Failed to delete saved view", e);
+		}
+	}, [router.query.id]);
+
+	const isStaffSection = useMemo(() => {
+		const path = router.asPath;
+		const id = router.query.id;
+		if (!id) return false;
+		const staffPages = ['/views', '/notices'];
+		return staffPages.some(page => path.includes(`/workspace/${id}${page}`));
+	}, [router.asPath, router.query.id]);
+
+	useEffect(() => {
+		if (isStaffSection && !savedViewsLoaded) {
+			loadSavedViews();
+		}
+	}, [isStaffSection, savedViewsLoaded, loadSavedViews]);
+
+	useEffect(() => {
+		const handleSavedViewsChanged = () => {
+			loadSavedViews();
+		};
+		window.addEventListener('savedViewsChanged', handleSavedViewsChanged);
+		return () => {
+			window.removeEventListener('savedViewsChanged', handleSavedViewsChanged);
+		};
+	}, [loadSavedViews]);
+
+	useEffect(() => {
+		setSavedViewsLoaded(false);
+	}, [router.query.id]);
+
 	useEffect(() => {
 		router.events.on("routeChangeStart", () => setLoading(true));
 		router.events.on("routeChangeComplete", () => setLoading(false));
@@ -104,20 +212,252 @@ const workspace: LayoutProps = ({ children }) => {
 		}
 	}, [workspace]);
 
-		// Use workspace color or fallback to bg-firefli
-		const workspaceBg = workspace && workspace.groupTheme ? "" : "bg-firefli";
-		return (
-			<div className={clsx("h-screen overflow-hidden", workspaceBg || "bg-zinc-50 dark:bg-zinc-900")}> 
-			<Head>
-				<title>{workspace.groupName ? `Firefli - ${workspace.groupName}` : "Loading..."}</title>
-				<link rel="icon" href={`${workspace.groupThumbnail}`} />
+	const getSecondarySidebar = useMemo(() => {
+		const path = router.asPath;
+		const id = router.query.id;
+		if (!id) return null;
+		const activityPages = ['/activity', '/leaderboard', '/sessions', '/quotas'];
+		const isActivitySection = activityPages.some(page => 
+			path.includes(`/workspace/${id}${page}`)
+		);
+
+		if (isActivitySection) {
+			const leaderboardEnabled = workspace.settings?.leaderboardEnabled;
+			const sessionsEnabled = workspace.settings?.sessionsEnabled;
+			const activityItems: SecondarySidebarItem[] = [
+				{
+					label: "Activity",
+					href: `/workspace/${id}/activity`,
+					icon: IconHourglassHigh,
+					active: path.includes(`/workspace/${id}/activity`),
+				},
+				{
+					label: "Quotas",
+					href: `/workspace/${id}/quotas`,
+					icon: IconTarget,
+					active: path.includes(`/workspace/${id}/quotas`),
+				},
+			];
+
+			if (leaderboardEnabled) {
+				activityItems.push({
+					label: "Leaderboard",
+					href: `/workspace/${id}/leaderboard`,
+					icon: IconTrophy,
+					active: path.includes(`/workspace/${id}/leaderboard`),
+				});
+			}
+
+			if (sessionsEnabled) {
+				activityItems.push({
+					label: "Sessions",
+					href: `/workspace/${id}/sessions`,
+					icon: IconCalendarStats,
+					active: path.includes(`/workspace/${id}/sessions`),
+				});
+			}
+
+			const sections: SecondarySidebarSection[] = [
+				{
+					title: "Activity",
+					items: activityItems,
+				},
+			];
+			return { title: "Activity", sections, hideHeader: true };
+		}
+
+		const staffPages = ['/views', '/notices'];
+		const isStaffSectionPage = staffPages.some(page => 
+			path.includes(`/workspace/${id}${page}`)
+		);
+
+		if (isStaffSectionPage) {
+			const currentViewId = router.query.view as string;
+			const isOnNotices = path.includes(`/workspace/${id}/notices`);
+			const savedViewItems: SecondarySidebarItem[] = savedViews.map((view) => ({
+				id: view.id,
+				label: view.name,
+				href: currentViewId === view.id 
+					? `/workspace/${id}/views` 
+					: `/workspace/${id}/views?view=${view.id}`,
+				color: view.color || undefined,
+				icon: view.icon && SAVED_VIEW_ICONS[view.icon] ? SAVED_VIEW_ICONS[view.icon] : undefined,
+				active: currentViewId === view.id,
+				canDelete: true,
+				onDelete: deleteSavedView,
+			}));
+
+			const sections: SecondarySidebarSection[] = [
+				{
+					title: "Staff",
+					items: [
+						{
+							label: "Views",
+							href: `/workspace/${id}/views`,
+							icon: IconUsers,
+							active: !isOnNotices && !currentViewId,
+						},
+						{
+							label: "Notices",
+							href: `/workspace/${id}/notices`,
+							icon: IconBeach,
+							active: isOnNotices,
+						},
+					],
+				},
+				{
+					title: "Saved Views",
+					canAdd: true,
+					onAdd: () => {
+						router.push(`/workspace/${id}/views?newView=true`);
+					},
+					items: savedViewItems,
+				},
+			];
+			return { title: "Staff", sections, hideHeader: true };
+		}
+
+		const docsEnabled = workspace.settings?.guidesEnabled;
+		const policiesEnabled = workspace.settings?.policiesEnabled;
+		const bothResourcesEnabled = docsEnabled && policiesEnabled;
+		const resourcesPages = ['/docs', '/policies'];
+		const isResourcesSection = resourcesPages.some(page => 
+			path.includes(`/workspace/${id}${page}`)
+		);
+
+		if (isResourcesSection && bothResourcesEnabled) {
+			const sections: SecondarySidebarSection[] = [
+				{
+					title: "Resources",
+					items: [
+						{
+							label: "Docs",
+							href: `/workspace/${id}/docs`,
+							icon: IconFileText,
+						},
+						{
+							label: "Policies",
+							href: `/workspace/${id}/policies`,
+							icon: IconShield,
+						},
+					],
+				},
+			];
+			return { title: "Resources", sections, hideHeader: true };
+		}
+
+		const isSettingsSection = path.includes(`/workspace/${id}/settings`);
+
+		if (isSettingsSection) {
+			const hasPermission = (permission: string) => {
+				return workspace.isAdmin || workspace.yourPermission?.includes(permission);
+			};
+
+			const canAccessGeneral = hasPermission('workspace_customisation');
+			const canAccessActivity = hasPermission('reset_activity');
+			const canAccessFeatures = hasPermission('manage_features');
+			const canAccessApi = hasPermission('manage_apikeys');
+			const canAccessPermissions = workspace.isAdmin || hasPermission('admin');
+			const canAccessAudit = hasPermission('view_audit_logs');
+			const canAccessInstance = workspace.isAdmin || hasPermission('admin');
+
+			const currentSection = (router.query.section as string) || 'general';
+
+			const settingsItems: SecondarySidebarItem[] = [];
+
+			if (canAccessGeneral) {
+				settingsItems.push({
+					label: "General",
+					href: `/workspace/${id}/settings?section=general`,
+					icon: IconHome,
+					active: currentSection === 'general',
+				});
+			}
+			if (canAccessActivity) {
+				settingsItems.push({
+					label: "Activity",
+					href: `/workspace/${id}/settings?section=activity`,
+					icon: IconHourglassHigh,
+					active: currentSection === 'activity',
+				});
+			}
+			if (canAccessFeatures) {
+				settingsItems.push({
+					label: "Feature Flags",
+					href: `/workspace/${id}/settings?section=features`,
+					icon: IconFlag,
+					active: currentSection === 'features',
+				});
+			}
+			if (canAccessApi) {
+				settingsItems.push({
+					label: "Public API",
+					href: `/workspace/${id}/settings?section=api`,
+					icon: IconKey,
+					active: currentSection === 'api',
+				});
+			}
+			if (canAccessPermissions) {
+				settingsItems.push({
+					label: "Permissions",
+					href: `/workspace/${id}/settings?section=permissions`,
+					icon: IconLock,
+					active: currentSection === 'permissions',
+				});
+			}
+			if (canAccessAudit) {
+				settingsItems.push({
+					label: "Audit Logs",
+					href: `/workspace/${id}/settings?section=audit`,
+					icon: IconBellExclamation,
+					active: currentSection === 'audit',
+				});
+			}
+			if (canAccessInstance) {
+				settingsItems.push({
+					label: "Services",
+					href: `/workspace/${id}/settings?section=instance`,
+					icon: IconServer,
+					active: currentSection === 'instance',
+				});
+			}
+
+			const sections: SecondarySidebarSection[] = [
+				{
+					title: "Settings",
+					items: settingsItems,
+				},
+			];
+			return { title: "Settings", sections, hideHeader: true };
+		}
+
+		return null;
+	}, [router.asPath, router.query.id, router.query.section, savedViews, router, workspace.isAdmin, workspace.yourPermission, workspace.settings?.guidesEnabled, workspace.settings?.policiesEnabled, workspace.settings?.leaderboardEnabled, workspace.settings?.sessionsEnabled, deleteSavedView]);
+
+	const showSecondarySidebar = !!getSecondarySidebar;
+	const workspaceBg = workspace && workspace.groupTheme ? "" : "bg-firefli";
+	return (
+		<div className={clsx("h-screen overflow-hidden bg-white/80 dark:bg-zinc-800/80", workspaceBg)}> 
+		<Head>
+			<title>{workspace.groupName ? `Firefli - ${workspace.groupName}` : "Loading..."}</title>
+			<link rel="icon" href={`${workspace.groupThumbnail}`} />
 			</Head>
 
 			<div className="flex flex-col h-screen">
 				<Topbar />
 				<div className="flex flex-1 overflow-hidden">
 					<Sidebar />
-					
+					{getSecondarySidebar ? (
+						<div className="hidden md:flex">
+							<SecondarySidebar
+								title={getSecondarySidebar.title}
+								sections={getSecondarySidebar.sections}
+								hideHeader={getSecondarySidebar.hideHeader}
+							/>
+						</div>
+					) : (
+						<div className="hidden md:flex w-4 h-full bg-zinc-50 dark:bg-zinc-900 rounded-tl-2xl flex-shrink-0" />
+					)}
 					<main
 						className={clsx(
 						"flex-1 transition-all duration-300 overflow-y-auto",
