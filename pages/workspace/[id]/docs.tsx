@@ -264,7 +264,7 @@ const Home: pageWithLayout<pageProps> = ({ documents, canCreate, canEdit, canDel
             onClick={() =>
               router.push(`/workspace/${router.query.id}/docs/new`)
             }
-            className="w-full bg-white dark:bg-zinc-800 rounded-lg shadow-sm p-4 mb-4 hover:shadow-md transition-shadow group"
+            className="w-full bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-lg shadow-sm p-4 mb-4 hover:shadow-md transition-shadow group"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
@@ -293,7 +293,7 @@ const Home: pageWithLayout<pageProps> = ({ documents, canCreate, canEdit, canDel
               <div
                 key={document.id}
                 onClick={() => goToGuide(document)}
-                className="relative bg-white dark:bg-zinc-800 rounded-lg shadow-sm p-4 hover:shadow-md transition-all text-left group cursor-pointer"
+                className="relative bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-lg shadow-sm p-4 hover:shadow-md transition-all text-left group cursor-pointer"
               >
                 {(canEdit || canDelete) && (
                   <button
@@ -367,7 +367,7 @@ const Home: pageWithLayout<pageProps> = ({ documents, canCreate, canEdit, canDel
             ))}
           </div>
         ) : (
-          <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm p-8 text-center">
+          <div className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-lg shadow-sm p-8 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
               <IconFileText className="w-8 h-8 text-primary" />
             </div>
