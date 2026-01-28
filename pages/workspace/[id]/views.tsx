@@ -1271,7 +1271,156 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
                 </div>
               </div>
             ) : (
-            <div className="bg-white dark:bg-zinc-800/50 backdrop-blur-sm border border-zinc-200 dark:border-zinc-700/50 rounded-lg overflow-hidden">
+            <>
+            <div className="md:hidden space-y-4">
+              {table.getRowModel().rows.map((row) => {
+                const user = row.original;
+                const warnings = Array.isArray(user.book)
+                  ? user.book.filter((b: any) => b.type === "warning").length
+                  : 0;
+                const hosted = user.hostedSessions as any;
+                const hostedLen = hosted && typeof hosted.length === "number" ? hosted.length : 0;
+
+                const selectCell = row.getVisibleCells().find(cell => cell.column.id === 'select');
+
+                return (
+                  <div
+                    key={row.id}
+                    className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 space-y-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      {selectCell && (
+                        <div className="flex-shrink-0">
+                          {flexRender(
+                            selectCell.column.columnDef.cell,
+                            selectCell.getContext()
+                          )}
+                        </div>
+                      )}
+                      <div
+                        className={`flex items-center gap-2 flex-1 ${hasViewMemberProfiles ? 'cursor-pointer' : 'cursor-default'}`}
+                        onClick={() => {
+                          if (hasViewMemberProfiles) {
+                            router.push(
+                              `/workspace/${router.query.id}/profile/${user.info.userId}`
+                            );
+                          }
+                        }}
+                      >
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getRandomBg(
+                            user.info.userId.toString()
+                          )}`}
+                        >
+                          <img
+                            src={user.info.picture!}
+                            className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                            style={{ background: "transparent" }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-zinc-900 dark:text-white truncate">
+                            {user.info.username}
+                          </p>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                            {user.rankName || "Guest"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
+                      {columnVisibility.minutes && (
+                        <div>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">Minutes</p>
+                          <p className="text-sm font-medium text-zinc-900 dark:text-white">{user.minutes}</p>
+                        </div>
+                      )}
+                      {columnVisibility.idleMinutes && (
+                        <div>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">Idle</p>
+                          <p className="text-sm font-medium text-zinc-900 dark:text-white">{user.idleMinutes}</p>
+                        </div>
+                      )}
+                      {columnVisibility.book && (
+                        <div>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">Warnings</p>
+                          <p className="text-sm font-medium text-zinc-900 dark:text-white">{warnings}</p>
+                        </div>
+                      )}
+                      {columnVisibility.hostedSessions && (
+                        <div>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">Hosted</p>
+                          <p className="text-sm font-medium text-zinc-900 dark:text-white">{hostedLen}</p>
+                        </div>
+                      )}
+                      {columnVisibility.sessionsAttended && (
+                        <div>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">Attended</p>
+                          <p className="text-sm font-medium text-zinc-900 dark:text-white">{user.sessionsAttended}</p>
+                        </div>
+                      )}
+                      {columnVisibility.allianceVisits && (
+                        <div>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">Alliance Visits</p>
+                          <p className="text-sm font-medium text-zinc-900 dark:text-white">{user.allianceVisits}</p>
+                        </div>
+                      )}
+                      {columnVisibility.inactivityNotices && (
+                        <div>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">Notices</p>
+                          <p className="text-sm font-medium text-zinc-900 dark:text-white">{user.inactivityNotices.length}</p>
+                        </div>
+                      )}
+                      {columnVisibility.messages && (
+                        <div>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">Messages</p>
+                          <p className="text-sm font-medium text-zinc-900 dark:text-white">{user.messages}</p>
+                        </div>
+                      )}
+                      {columnVisibility.registered && (
+                        <div>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">Registered</p>
+                          <p className="text-sm font-medium text-zinc-900 dark:text-white">{user.registered ? "✅" : "❌"}</p>
+                        </div>
+                      )}
+                      {columnVisibility.quota && (
+                        <div>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">Quota</p>
+                          <p className="text-sm font-medium text-zinc-900 dark:text-white">{user.quota ? "✅" : "❌"}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <button
+                    onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage()}
+                    className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-700/50 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  >
+                    Previous
+                  </button>
+                  <div className="flex items-center px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 whitespace-nowrap">
+                    <span className="text-zinc-900 dark:text-white font-semibold">{table.getState().pagination.pageIndex + 1}</span>
+                    <span className="mx-1">/</span>
+                    <span>{table.getPageCount()}</span>
+                  </div>
+                  <button
+                    onClick={() => table.nextPage()}
+                    disabled={!table.getCanNextPage()}
+                    className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-700/50 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="hidden md:block bg-white dark:bg-zinc-800/50 backdrop-blur-sm border border-zinc-200 dark:border-zinc-700/50 rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full table-auto md:table-fixed divide-y divide-zinc-200 dark:divide-zinc-700">
                   <thead className="bg-zinc-50 dark:bg-zinc-800/80 border-b border-zinc-200 dark:border-zinc-700">
@@ -1384,6 +1533,7 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
                 </div>
               </div>
             </div>
+            </>
             )}
           </div>
         </div>
