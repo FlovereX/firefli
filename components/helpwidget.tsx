@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { Popover, Transition, Dialog } from "@headlessui/react";
 import {
   IconInfoCircle,
@@ -6,13 +6,39 @@ import {
   IconBrandGithub,
   IconBug,
   IconBrandDiscord,
-  IconMail,
+  IconHistory,
   IconCopyright,
+  IconLoader2,
 } from "@tabler/icons-react";
 import packageJson from "../package.json";
+import ReactMarkdown from "react-markdown";
+import rehypeSanitize from "rehype-sanitize";
+import rehypeRaw from "rehype-raw";
+
+interface ChangelogItem {
+  title: string;
+  pubDate: string;
+  content: string;
+}
 
 const HelpWidget = () => {
   const [showCopyright, setShowCopyright] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(false);
+  const [changelogItems, setChangelogItems] = useState<ChangelogItem[]>([]);
+  const [changelogLoading, setChangelogLoading] = useState(false);
+
+  useEffect(() => {
+    if (showChangelog && changelogItems.length === 0) {
+      setChangelogLoading(true);
+      fetch("/api/changelog")
+        .then((res) => res.json())
+        .then((data) => {
+          setChangelogItems(data);
+          setChangelogLoading(false);
+        })
+        .catch(() => setChangelogLoading(false));
+    }
+  }, [showChangelog, changelogItems.length]);
 
 	function clsx(...classes: (string | undefined | null | false)[]): string {
 		return classes.filter(Boolean).join(" ");
@@ -84,13 +110,13 @@ const HelpWidget = () => {
                   <IconBrandDiscord className="w-4 h-4 text-zinc-500" />
                   <span className="text-sm">Community</span>
                 </a>
-                <a
-                  href="mailto:support@firefli.net"
-                  className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors text-zinc-700 dark:text-zinc-200"
+                <button
+                  onClick={() => setShowChangelog(true)}
+                  className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors text-zinc-700 dark:text-zinc-200 w-full"
                 >
-                  <IconMail className="w-4 h-4 text-zinc-500" />
-                  <span className="text-sm">Contact Us</span>
-                </a>
+                  <IconHistory className="w-4 h-4 text-zinc-500" />
+                  <span className="text-sm">Changelog</span>
+                </button>
               </div>
 
               <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
@@ -158,6 +184,93 @@ const HelpWidget = () => {
                       type="button"
                       className="inline-flex justify-center rounded-md border border-transparent bg-zinc-100 dark:bg-zinc-700 px-4 py-2 text-sm font-medium text-zinc-900 dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2"
                       onClick={() => setShowCopyright(false)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      <Transition appear show={showChangelog} as={Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-[10000]"
+          onClose={() => setShowChangelog(false)}
+        >
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black bg-opacity-25" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white dark:bg-zinc-800 p-6 text-left align-middle shadow-xl transition-all max-h-[80vh] flex flex-col">
+                  <Dialog.Title
+                    as="h3"
+                    className="text-lg font-medium leading-6 text-zinc-900 dark:text-white flex items-center gap-2"
+                  >
+                    <IconHistory className="w-5 h-5" />
+                    Changelog
+                  </Dialog.Title>
+                  <div className="mt-4 flex-1 overflow-y-auto">
+                    {changelogLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <IconLoader2 className="w-6 h-6 animate-spin text-primary" />
+                      </div>
+                    ) : changelogItems.length === 0 ? (
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">No changelog entries found.</p>
+                    ) : (
+                      <div className="space-y-6">
+                        {changelogItems.slice(0, 10).map((item, index) => (
+                          <div key={index} className="border-b border-zinc-200 dark:border-zinc-700 pb-4 last:border-0">
+                            <h4 className="font-medium text-zinc-900 dark:text-white">{item.title}</h4>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                              {new Date(item.pubDate).toLocaleDateString()}
+                            </p>
+                            <div className="mt-2 text-sm text-zinc-600 dark:text-zinc-300 prose prose-sm dark:prose-invert max-w-none">
+                              <ReactMarkdown rehypePlugins={[rehypeRaw, rehypeSanitize]}>
+                                {item.content}
+                              </ReactMarkdown>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-6 flex justify-between items-center">
+                    <a
+                      href="https://feedback.firefli.net/changelog"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline"
+                    >
+                      View full changelog
+                    </a>
+                    <button
+                      type="button"
+                      className="inline-flex justify-center rounded-md border border-transparent bg-zinc-100 dark:bg-zinc-700 px-4 py-2 text-sm font-medium text-zinc-900 dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2"
+                      onClick={() => setShowChangelog(false)}
                     >
                       Close
                     </button>
