@@ -50,7 +50,7 @@ export async function handler(
 		const docs = await prisma.document.findMany({
 			where: {
 				workspaceGroupId: id,
-				isTrainingDocument: true
+				requiresAcknowledgment: false
 			},
 			include: {
 				owner: {
@@ -67,7 +67,7 @@ export async function handler(
 	const docs = await prisma.document.findMany({
 		where: {
 			workspaceGroupId: id,
-			isTrainingDocument: true,
+			requiresAcknowledgment: false,
 			roles: {
 				some: {
 					id: user.roles[0].id
