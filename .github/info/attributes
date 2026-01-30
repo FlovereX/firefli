@@ -1,3 +1,0 @@
-*.rb filter=gitignore
-*.ts filter=gitignore
-*.tsx filter=gitignore

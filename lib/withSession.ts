@@ -8,7 +8,7 @@ import {
   NextApiRequest,
   NextApiResponse,
 } from "next";
-import { isUserBlocked, logBlockedAccess } from "@/utils/blocklist"; // gitignore
+import { isUserBlocked, logBlockedAccess } from "@/utils/blocklist";
 
 if (process.env.NODE_ENV === 'production') {
   const secret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
@@ -43,16 +43,11 @@ export function withSessionRoute(handler: NextApiHandler) {
   return async (req: NextApiRequest, res: NextApiResponse) => {
     // @ts-ignore
     req.session = await getIronSession(req, res, sessionOptions);
-    
-    // Check if the user's session should be revoked due to blocklist
     // @ts-ignore
     if (req.session.userid && isUserBlocked(req.session.userid)) {
       // @ts-ignore
       logBlockedAccess(req.session.userid, 'active session');
-      // Destroy the session immediately
       req.session.destroy();
-      
-      // Return 401 Unauthorized for API routes
       return res.status(401).json({ 
         success: false, 
         error: 'Access denied',

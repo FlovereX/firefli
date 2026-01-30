@@ -72,47 +72,47 @@ const Login: NextPage = () => {
     isDarkModeRef.current = isDark;
   }, [mounted, theme]);
 
-  useEffect(() => { // gitignore
-    if (!router.isReady) return; // gitignore
+  useEffect(() => { 
+    if (!router.isReady) return; 
     
-    const error = router.query.error as string; // gitignore
-    if (error) { // gitignore
-      let message = 'An error occurred during login.'; // gitignore
-      switch (error) { // gitignore
-        case 'access_denied': // gitignore
-          message = 'Access denied. Your account has been blocked from accessing this system.'; // gitignore
-          break; // gitignore
-        case 'oauth_error': // gitignore
-          message = 'OAuth authentication failed. Please try again.'; // gitignore
-          break; // gitignore
-        case 'missing_params': // gitignore
-          message = 'Missing required authentication parameters.'; // gitignore
-          break; // gitignore
-        case 'state_mismatch': // gitignore
-          message = 'Security verification failed. Please try logging in again.'; // gitignore
-          break; // gitignore
-        case 'config_error': // gitignore
-          message = 'Server configuration error. Please contact an administrator.'; // gitignore
-          break; // gitignore
-        case 'invalid_user': // gitignore
-          message = 'Invalid user information received from Roblox.'; // gitignore
-          break; // gitignore
-        case 'database_error': // gitignore
-          message = 'Database error during login. Please try again.'; // gitignore
-          break; // gitignore
-        case 'oauth_failed': // gitignore
-          message = 'OAuth authentication failed. Please check your credentials and try again.'; // gitignore
-          break; // gitignore
-      } // gitignore
+    const error = router.query.error as string; 
+    if (error) { 
+      let message = 'An error occurred during login.'; 
+      switch (error) { 
+        case 'access_denied': 
+          message = 'Access denied. Your account has been blocked from accessing this system.'; 
+          break; 
+        case 'oauth_error': 
+          message = 'OAuth authentication failed. Please try again.'; 
+          break; 
+        case 'missing_params': 
+          message = 'Missing required authentication parameters.'; 
+          break; 
+        case 'state_mismatch': 
+          message = 'Security verification failed. Please try logging in again.'; 
+          break; 
+        case 'config_error': 
+          message = 'Server configuration error. Please contact an administrator.'; 
+          break; 
+        case 'invalid_user': 
+          message = 'Invalid user information received from Roblox.'; 
+          break; 
+        case 'database_error': 
+          message = 'Database error during login. Please try again.'; 
+          break; 
+        case 'oauth_failed': 
+          message = 'OAuth authentication failed. Please check your credentials and try again.'; 
+          break; 
+      } 
       
-      toast.error(message, { // gitignore
-        duration: 6000, // gitignore
-        position: 'top-center', // gitignore
-      }); // gitignore
+      toast.error(message, { 
+        duration: 6000, 
+        position: 'top-center', 
+      }); 
       
-      router.replace('/login', undefined, { shallow: true }); // gitignore
-    } // gitignore
-  }, [router.isReady, router.query.error]); // gitignore
+      router.replace('/login', undefined, { shallow: true }); 
+    } 
+  }, [router.isReady, router.query.error]); 
 
   useEffect(() => {
     if (!mounted) return;
