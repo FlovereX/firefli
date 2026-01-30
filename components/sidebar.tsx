@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, Fragment } from "react"
 import type { NextPage } from "next"
 import { loginState, workspacestate } from "@/state"
 import { themeState } from "@/state/theme"
@@ -6,6 +6,7 @@ import { useRecoilState } from "recoil"
 import { Menu, Listbox, Dialog, Transition } from "@headlessui/react"
 import { useRouter } from "next/router"
 import ThemeToggle from "./ThemeToggle";
+import { createPortal } from "react-dom";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import { 
   Home07Icon,
@@ -43,7 +44,6 @@ import {
   IconPlus,
   IconX,
 } from "@tabler/icons-react"
-import { Fragment } from "react"
 import axios from "axios"
 import clsx from "clsx"
 import Parser from "rss-parser"
@@ -92,6 +92,75 @@ const ChangelogContent: React.FC<{ workspaceId: number }> = ({ workspaceId }) =>
           </div>
         </div>
       ))}
+    </div>
+  );
+};
+
+const SidebarTooltip: React.FC<{ label: string; children: React.ReactNode }> = ({
+  label,
+  children,
+}) => {
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+
+  const updatePosition = () => {
+    const rect = anchorRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setPosition({
+      top: rect.top + rect.height / 2,
+      left: rect.right + 8,
+    });
+  };
+
+  useEffect(() => {
+    if (!visible) return;
+    updatePosition();
+    const handleScroll = () => updatePosition();
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", handleScroll);
+    };
+  }, [visible]);
+
+  const handleMouseEnter = () => {
+    updatePosition();
+    setVisible(true);
+  };
+
+  const handleMouseLeave = () => {
+    setVisible(false);
+  };
+
+  const portalTarget = typeof document !== "undefined" ? document.body : null;
+
+  return (
+    <div
+      ref={anchorRef}
+      className="relative flex justify-center"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      {children}
+      {visible && portalTarget
+        ? createPortal(
+            <div
+              className="fixed z-[9999] pointer-events-none"
+              style={{ left: position.left, top: position.top }}
+              role="tooltip"
+            >
+              <div className="relative -translate-y-1/2">
+                <div className="px-3 py-1.5 bg-[color:rgb(var(--group-theme))] text-white text-sm rounded-lg whitespace-nowrap shadow-lg">
+                  {label}
+                </div>
+                <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[color:rgb(var(--group-theme))]"></div>
+              </div>
+            </div>,
+            portalTarget
+          )
+        : null}
     </div>
   );
 };
@@ -331,69 +400,69 @@ const Sidebar: NextPage = () => {
           <nav className="flex-1 space-y-1 flex flex-col items-center">
             {sections.map((section) => {
               if (section.accessible === undefined || section.accessible) {
-                const isActive = section.matchPaths 
+                const isActive = section.matchPaths
                   ? section.matchPaths.some(path => router.asPath.startsWith(path))
                   : (section.href && router.asPath === section.href.replace("[id]", workspace.groupId.toString()));
                 const isHugeIcon = Array.isArray(section.icon);
                 return (
-                  <button
-                    key={section.name}
-                    onClick={() => {
-                      if (section.href) {
-                        gotopage(section.href);
-                      }
-                    }}
-                    title={section.name}
-                    className={clsx(
-                      "rounded-lg transition-all duration-300 relative flex items-center justify-center w-12 h-12",
-                      isActive
-                        ? "bg-[color:rgb(var(--group-theme)/0.1)] text-[color:rgb(var(--group-theme))]"
-                        : "text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-700",
-                    )}
-                  >
-                    {isHugeIcon ? (
-                      <HugeiconsIcon icon={section.icon as IconSvgElement} className="w-5 h-5" strokeWidth={1.5} />
-                    ) : (
-                      (() => { const IconComponent = section.icon as React.ElementType; return <IconComponent className="w-5 h-5" />; })()
-                    )}
-                    {section.name === "Docs" && pendingPolicyCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                        {pendingPolicyCount > 9 ? '9+' : pendingPolicyCount}
-                      </span>
-                    )}
-                    {section.name === "Staff" && pendingNoticesCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                        {pendingNoticesCount > 9 ? '9+' : pendingNoticesCount}
-                      </span>
-                    )}
-                  </button>
+                  <SidebarTooltip key={section.name} label={section.name}>
+                    <button
+                      onClick={() => {
+                        if (section.href) {
+                          gotopage(section.href);
+                        }
+                      }}
+                      className={clsx(
+                        "rounded-lg transition-all duration-200 ease-in-out relative flex items-center justify-center w-12 h-12",
+                        isActive
+                          ? "bg-[color:rgb(var(--group-theme)/0.1)] text-[color:rgb(var(--group-theme))] scale-105"
+                          : "text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:scale-105",
+                      )}
+                      aria-label={section.name}
+                    >
+                      {isHugeIcon ? (
+                        <HugeiconsIcon icon={section.icon as IconSvgElement} className="w-5 h-5" strokeWidth={1.5} />
+                      ) : (
+                        (() => { const IconComponent = section.icon as React.ElementType; return <IconComponent className="w-5 h-5" />; })()
+                      )}
+                      {section.name === "Docs" && pendingPolicyCount > 0 && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                          {pendingPolicyCount > 9 ? '9+' : pendingPolicyCount}
+                        </span>
+                      )}
+                      {section.name === "Staff" && pendingNoticesCount > 0 && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                          {pendingNoticesCount > 9 ? '9+' : pendingNoticesCount}
+                        </span>
+                      )}
+                    </button>
+                  </SidebarTooltip>
                 );
               }
               return null;
             })}
           </nav>
-          <div className="flex justify-center">
-            <div className="rounded-lg transition-all duration-300 flex items-center justify-center w-12 h-12 hover:bg-zinc-100 dark:hover:bg-zinc-700">
+          <SidebarTooltip label="Toggle Theme">
+            <div className="rounded-lg transition-all duration-200 ease-in-out flex items-center justify-center w-12 h-12 hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:scale-105">
               <ThemeToggle />
             </div>
-          </div>
+          </SidebarTooltip>
           {settingsAccessible && (
-            <div className="flex justify-center">
+            <SidebarTooltip label="Settings">
               <button
                 onClick={() => {
                   gotopage(settingsHref);
                 }}
-                title="Settings"
                 className={clsx(
-                  "rounded-lg transition-all duration-300 flex items-center justify-center w-12 h-12",
+                  "rounded-lg transition-all duration-200 ease-in-out flex items-center justify-center w-12 h-12",
                   isSettingsActive
-                    ? "bg-[color:rgb(var(--group-theme)/0.1)] text-[color:rgb(var(--group-theme))]"
-                    : "text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-700",
+                    ? "bg-[color:rgb(var(--group-theme)/0.1)] text-[color:rgb(var(--group-theme))] scale-105"
+                    : "text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:scale-105",
                 )}
               >
                 <HugeiconsIcon icon={Settings01Icon} className="w-5 h-5" strokeWidth={1.5} />
               </button>
-            </div>
+            </SidebarTooltip>
           )}
         </div>
       </aside>

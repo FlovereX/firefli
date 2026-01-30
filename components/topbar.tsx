@@ -3,7 +3,7 @@ import { loginState, workspacestate, createWorkspaceModalState } from "@/state";
 import { useRecoilState } from "recoil";
 import { Menu, Transition, Listbox } from "@headlessui/react";
 import { useRouter } from "next/router";
-import { IconLogout, IconChevronDown, IconPlus, IconCheck } from "@tabler/icons-react";
+import { IconLogout, IconChevronDown, IconPlus, IconCheck, IconHome } from "@tabler/icons-react";
 import axios from "axios";
 import { Fragment } from "react";
 
@@ -132,6 +132,22 @@ const Topbar: NextPage = () => {
 														No other workspaces
 													</div>
 												)}
+											</div>
+											<div className="border-t border-zinc-200 dark:border-zinc-700 p-2">
+												<button
+													type="button"
+													className="w-full flex items-center gap-3 px-3 py-2 cursor-pointer rounded-md transition duration-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-left"
+													onClick={(e) => {
+														e.preventDefault();
+														e.stopPropagation();
+														router.push('/');
+													}}
+												>
+													<div className="w-6 h-6 rounded bg-zinc-100 dark:bg-zinc-600 flex items-center justify-center">
+														<IconHome className="w-4 h-4 text-zinc-600 dark:text-zinc-300" />
+													</div>
+													<span className="flex-1 text-sm font-medium text-zinc-700 dark:text-white">Home</span>
+												</button>
 											</div>
 											{login?.canMakeWorkspace && process.env.NEXT_PUBLIC_FIREFLI_LIMIT === 'true' && (
 												<div className="border-t border-zinc-200 dark:border-zinc-700 p-2">

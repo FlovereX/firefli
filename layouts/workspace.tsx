@@ -16,6 +16,7 @@ import WorkspaceBirthdayPrompt from '@/components/bdayprompt';
 import { useEffect, useState, useMemo, useCallback } from "react";
 import clsx from 'clsx';
 import SecondarySidebar, { SecondarySidebarSection, SecondarySidebarItem } from "@/components/tabs";
+import { motion, AnimatePresence } from 'framer-motion';
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import {
   Home07Icon,
@@ -461,7 +462,7 @@ const workspace: LayoutProps = ({ children }) => {
 
 			<div className="flex flex-col h-screen-safe">
 				<Topbar />
-				<div className="flex flex-1 overflow-hidden">
+				<div className="flex flex-1 overflow-y-hidden">
 					<Sidebar />
 					{getSecondarySidebar ? (
 						<div className="hidden md:flex">
@@ -479,9 +480,18 @@ const workspace: LayoutProps = ({ children }) => {
 						"flex-1 transition-all duration-300 overflow-y-auto",
 						"pb-20 md:pb-0"
 						)}>
-						<div className="relative z-10">
-						{children}
-						</div>
+						<AnimatePresence mode="wait">
+							<motion.div
+								key={router.asPath}
+								initial={{ opacity: 0, y: 10 }}
+								animate={{ opacity: 1, y: 0 }}
+								exit={{ opacity: 0, y: -10 }}
+								transition={{ duration: 0.2, ease: "easeInOut" }}
+								className="relative z-10"
+							>
+								{children}
+							</motion.div>
+						</AnimatePresence>
 						{router.query.id && (
 							<WorkspaceBirthdayPrompt workspaceId={router.query.id as string} />
 						)}
