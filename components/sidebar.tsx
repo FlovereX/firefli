@@ -221,6 +221,18 @@ const Sidebar: NextPage = () => {
   const getSections = (): SectionConfig[] => {
     if (!workspace?.groupId) return [];
     
+    const hasNoticesPermission = noticesEnabled && (
+      workspace.yourPermission?.includes("create_notices") ||
+      workspace.yourPermission?.includes("approve_notices") ||
+      workspace.yourPermission?.includes("manage_notices")
+    );
+    
+    const hasViewMembersPermission = workspace.yourPermission?.includes("view_members");
+    const showStaffSection = hasViewMembersPermission || hasNoticesPermission;
+    const staffHref = hasViewMembersPermission 
+      ? `/workspace/${workspace.groupId}/views` 
+      : `/workspace/${workspace.groupId}/notices`;
+    
     return [
     { 
       name: "Home", 
@@ -254,16 +266,16 @@ const Sidebar: NextPage = () => {
         `/workspace/${workspace.groupId}/policies`,
       ]
     }] : []),
-    { 
+    ...(showStaffSection ? [{ 
       name: "Staff", 
-      href: `/workspace/${workspace.groupId}/views`,
+      href: staffHref,
       icon: UserIcon, 
-      accessible: workspace.yourPermission?.includes("view_members"),
+      accessible: true,
       matchPaths: [
         `/workspace/${workspace.groupId}/views`,
         `/workspace/${workspace.groupId}/notices`,
       ]
-    },
+    }] : []),
     ...(alliesEnabled ? [{
       name: "Alliances",
       href: `/workspace/${workspace.groupId}/alliances`,

@@ -304,23 +304,36 @@ const workspace: LayoutProps = ({ children }) => {
 				onDelete: deleteSavedView,
 			}));
 
+			const hasViewMembersPermission = workspace.yourPermission?.includes("view_members");
+			const hasNoticesPermission = 
+				workspace.yourPermission?.includes("create_notices") ||
+				workspace.yourPermission?.includes("approve_notices") ||
+				workspace.yourPermission?.includes("manage_notices");
+
+			const staffItems: SecondarySidebarItem[] = [];
+			
+			if (hasViewMembersPermission) {
+				staffItems.push({
+					label: "Views",
+					href: `/workspace/${id}/views`,
+					icon: UserMultiple02Icon,
+					active: !isOnNotices && !currentViewId,
+				});
+			}
+			
+			if (hasNoticesPermission) {
+				staffItems.push({
+					label: "Notices",
+					href: `/workspace/${id}/notices`,
+					icon: Beach02Icon,
+					active: isOnNotices,
+				});
+			}
+
 			const sections: SecondarySidebarSection[] = [
 				{
 					title: "Staff",
-					items: [
-						{
-							label: "Views",
-							href: `/workspace/${id}/views`,
-							icon: UserMultiple02Icon,
-							active: !isOnNotices && !currentViewId,
-						},
-						{
-							label: "Notices",
-							href: `/workspace/${id}/notices`,
-							icon: Beach02Icon,
-							active: isOnNotices,
-						},
-					],
+					items: staffItems,
 				},
 				{
 					title: "Saved Views",
