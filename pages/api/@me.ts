@@ -60,7 +60,7 @@ export async function handler(
 
 	const [dbuser, username, displayname] = await Promise.all([
 		prisma.user.findUnique({
-			where: { userid: userId },
+			where: { userid: BigInt(userId) },
 			include: { roles: true }
 		}),
 		getUsername(userId),
@@ -69,7 +69,7 @@ export async function handler(
 	let canMakeWorkspace = dbuser?.isOwner || false;
 	if (process.env.NEXT_PUBLIC_FIREFLI_LIMIT === 'true') {
 		const existingWorkspace = await prisma.workspace.findFirst({
-			where: { ownerId: userId },
+			where: { ownerId: BigInt(userId) },
 			select: { groupId: true }
 		});
 		canMakeWorkspace = !existingWorkspace;
@@ -112,7 +112,7 @@ export async function handler(
 		try {
 			await prisma.user.upsert({
 				where: {
-					userid: userId
+					userid: BigInt(userId)
 				},
 				update: {
 					picture: getThumbnail(userId),
@@ -120,7 +120,7 @@ export async function handler(
 					registered: true
 				},
 				create: {
-					userid: userId,
+					userid: BigInt(userId),
 					picture: getThumbnail(userId),
 					username: await getUsername(userId),
 					registered: true
