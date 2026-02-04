@@ -238,7 +238,7 @@ const workspace: LayoutProps = ({ children }) => {
 		const path = router.asPath;
 		const id = router.query.id;
 		if (!id) return null;
-		const activityPages = ['/activity', '/leaderboard', '/sessions', '/quotas'];
+		const activityPages = ['/activity', '/leaderboard', '/quotas'];
 		const isActivitySection = activityPages.some(page => 
 			path.includes(`/workspace/${id}${page}`)
 		);
@@ -267,15 +267,6 @@ const workspace: LayoutProps = ({ children }) => {
 					href: `/workspace/${id}/leaderboard`,
 					icon: ChampionIcon,
 					active: path.includes(`/workspace/${id}/leaderboard`),
-				});
-			}
-
-			if (sessionsEnabled) {
-				activityItems.push({
-					label: "Sessions",
-					href: `/workspace/${id}/sessions`,
-					icon: Calendar01Icon,
-					active: path.includes(`/workspace/${id}/sessions`),
 				});
 			}
 

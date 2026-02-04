@@ -253,9 +253,15 @@ const Sidebar: NextPage = () => {
       matchPaths: [
         `/workspace/${workspace.groupId}/activity`,
         `/workspace/${workspace.groupId}/leaderboard`,
-        `/workspace/${workspace.groupId}/sessions`,
+        `/workspace/${workspace.groupId}/quotas`,
       ]
     },
+    ...(sessionsEnabled ? [{ 
+      name: "Sessions", 
+      href: `/workspace/${workspace.groupId}/sessions`,
+      icon: IconCalendarWeekFilled,
+      accessible: true,
+    }] : []),
     ...((docsEnabled || policiesEnabled) ? [{ 
       name: "Docs", 
       href: docsEnabled ? `/workspace/${workspace.groupId}/docs` : `/workspace/${workspace.groupId}/policies`, 
