@@ -15,6 +15,7 @@ export default function Document() {
             "font-src 'self' https://fonts.gstatic.com; " +
             "img-src 'self' data: https: blob:; " +
             "connect-src 'self' https:  https://events.posthog.com https://app.posthog.com; " +
+            "media-src 'self' https://audio-ssl.itunes.apple.com https://cdn.freesound.org; " +
             "frame-src 'self'; " +
             "base-uri 'self'; form-action 'self';"
           }

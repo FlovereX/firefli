@@ -47,6 +47,12 @@ export default withSessionRoute(async function handler(req: NextApiRequest, res:
 		username: r.user.username || r.user.userid.toString(),
 		picture: r.user.picture,
 		joinDate: r.joinDate,
+		introMessage: r.introMessage,
+		trackId: (r as any).trackId,
+		trackName: (r as any).trackName,
+		artistName: (r as any).artistName,
+		artwork: (r as any).artwork,
+		previewUrl: (r as any).previewUrl,
 		}))
 	});
 });

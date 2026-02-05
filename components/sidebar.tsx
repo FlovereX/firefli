@@ -13,6 +13,7 @@ import {
   Comment01Icon,
   Task01Icon,
   File02Icon,
+  Calendar01Icon,
   UserMultipleIcon,
   UserIcon,
   Agreement01Icon,
@@ -259,7 +260,7 @@ const Sidebar: NextPage = () => {
     ...(sessionsEnabled ? [{ 
       name: "Sessions", 
       href: `/workspace/${workspace.groupId}/sessions`,
-      icon: IconCalendarWeekFilled,
+      icon: Calendar01Icon,
       accessible: true,
     }] : []),
     ...((docsEnabled || policiesEnabled) ? [{ 
@@ -318,7 +319,7 @@ const Sidebar: NextPage = () => {
     ...(sessionsEnabled ? [{
       name: "Sessions",
       href: `/workspace/${workspace.groupId}/sessions`,
-      icon: IconCalendarWeekFilled,
+      icon: Calendar01Icon,
       accessible: true,
     }] : []),
     { name: "Staff", href: `/workspace/${workspace.groupId}/views`, icon: UserMultipleIcon, accessible: workspace.yourPermission.includes("view_members") },

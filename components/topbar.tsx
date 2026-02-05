@@ -6,6 +6,7 @@ import { useRouter } from "next/router";
 import { IconLogout, IconChevronDown, IconPlus, IconCheck, IconHome } from "@tabler/icons-react";
 import axios from "axios";
 import { Fragment } from "react";
+import ThemeToggle from "./ThemeToggle";
 
 
 const BG_COLORS = [
@@ -179,6 +180,9 @@ const Topbar: NextPage = () => {
 					</div>
 
 					<div className="flex items-center space-x-2">
+						<div className="sm:hidden">
+							<ThemeToggle />
+						</div>
 						<Menu as="div" className="relative">
 						<Menu.Button className="flex items-center space-x-2 px-2 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
 							<div className={`h-7 w-7 rounded-full ${getRandomBg(login?.userId)} flex items-center justify-center overflow-hidden`}>
