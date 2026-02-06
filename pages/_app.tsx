@@ -65,7 +65,7 @@ function ColorThemeHandler() {
   const [workspace] = useRecoilState(workspacestate);
 
   useEffect(() => {
-    const defaultColor = "236, 72, 153";
+    const defaultColor = "52, 152, 219";
 
     if (
       workspace &&
@@ -83,7 +83,7 @@ function ColorThemeHandler() {
 }
 
 function getRGBFromTailwindColor(tw: any): string {
-  const fallback = "236, 72, 153"; // pink-500
+  const fallback = "52, 152, 219"; // firefli blue
 
   if (!tw || typeof tw !== "string") {
     if (tw !== null && tw !== undefined) {
