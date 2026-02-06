@@ -87,6 +87,7 @@ model user {
   workspaceMemberships  workspaceMember[]
   Ally                  Ally[]                 @relation("AllyTouser")
   roles                 role[]                 @relation("roleTouser")
+  localViews            SavedView[]            @relation("UserLocalViews")
 
   @@index([birthdayMonth, birthdayDay])
 }
@@ -547,10 +548,14 @@ model SavedView {
   icon             String?
   filters          Json
   columnVisibility Json
+  isLocal          Boolean   @default(false)
+  createdBy        BigInt?
   createdAt        DateTime  @default(now())
   workspace        workspace @relation(fields: [workspaceGroupId], references: [groupId])
+  creator          user?     @relation("UserLocalViews", fields: [createdBy], references: [userid])
 
   @@index([workspaceGroupId])
+  @@index([createdBy])
 }
 
 model PolicyAcknowledgment {

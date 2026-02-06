@@ -22,6 +22,7 @@ export interface SecondarySidebarItem {
 
 export interface SecondarySidebarSection {
   title?: string;
+  icon?: IconSvgElement;
   items: SecondarySidebarItem[];
   onAdd?: () => void;
   canAdd?: boolean;
@@ -72,7 +73,10 @@ const SecondarySidebar: React.FC<SecondarySidebarProps> = ({
                 {(section.title || section.canAdd) && (
                   <div className="flex items-center justify-between px-2 py-1.5">
                     {section.title && (
-                      <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                      <span className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                        {section.icon && (
+                          <HugeiconsIcon icon={section.icon} className="w-3.5 h-3.5" />
+                        )}
                         {section.title}
                       </span>
                     )}

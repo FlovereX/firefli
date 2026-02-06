@@ -25,6 +25,7 @@ import {
   ChampionIcon,
   Calendar01Icon,
   UserMultiple02Icon,
+  UserGroupIcon,
   Beach02Icon,
   File02Icon,
   UserShield01Icon,
@@ -95,6 +96,7 @@ const workspace: LayoutProps = ({ children }) => {
 	const router = useRouter();
 	const [loading, setLoading] = useState(false);
 	const [savedViews, setSavedViews] = useState<Array<{id: string; name: string; color?: string; icon?: string}>>([]);
+	const [localViews, setLocalViews] = useState<Array<{id: string; name: string; color?: string; icon?: string}>>([]);
 	const [savedViewsLoaded, setSavedViewsLoaded] = useState(false);
 
 	const useTheme = (groupTheme: string) => {
@@ -163,11 +165,12 @@ const workspace: LayoutProps = ({ children }) => {
 		}
 		try {
 			const res = await axios.get(`/api/workspace/${router.query.id}/views`);
-			if (res.data && res.data.views) {
+			if (res.data) {
 				setSavedViews(res.data.views || []);
+				setLocalViews(res.data.localViews || []);
 			}
 		} catch (e) {
-			console.error("Failed to load saved views", e);
+			console.error("Failed to load views", e);
 		}
 		setSavedViewsLoaded(true);
 	}, [router.query.id, workspace.isAdmin, workspace.yourPermission]);
@@ -176,9 +179,10 @@ const workspace: LayoutProps = ({ children }) => {
 		try {
 			await axios.delete(`/api/workspace/${router.query.id}/views/${viewId}`);
 			setSavedViews((prev) => prev.filter((v) => v.id !== viewId));
+			setLocalViews((prev) => prev.filter((v) => v.id !== viewId));
 			window.dispatchEvent(new CustomEvent('savedViewsChanged'));
 		} catch (e) {
-			console.error("Failed to delete saved view", e);
+			console.error("Failed to delete view", e);
 		}
 	}, [router.query.id]);
 
@@ -287,7 +291,20 @@ const workspace: LayoutProps = ({ children }) => {
 		if (isStaffSectionPage) {
 			const currentViewId = router.query.view as string;
 			const isOnNotices = path.includes(`/workspace/${id}/notices`);
-			const savedViewItems: SecondarySidebarItem[] = savedViews.map((view) => ({
+			const teamViewItems: SecondarySidebarItem[] = savedViews.map((view) => ({
+				id: view.id,
+				label: view.name,
+				href: currentViewId === view.id 
+					? `/workspace/${id}/views` 
+					: `/workspace/${id}/views?view=${view.id}`,
+				color: view.color || undefined,
+				icon: view.icon && SAVED_VIEW_ICONS[view.icon] ? SAVED_VIEW_ICONS[view.icon] : undefined,
+				active: currentViewId === view.id,
+				canDelete: true,
+				onDelete: deleteSavedView,
+			}));
+
+			const localViewItems: SecondarySidebarItem[] = localViews.map((view) => ({
 				id: view.id,
 				label: view.name,
 				href: currentViewId === view.id 
@@ -336,14 +353,24 @@ const workspace: LayoutProps = ({ children }) => {
 			];
 			if (hasUseSavedViewsPermission) {
 				sections.push({
-					title: "Saved Views",
+					title: "Team Views",
+					icon: UserGroupIcon,
 					canAdd: hasCreateViewsPermission,
 					onAdd: hasCreateViewsPermission ? () => {
 						router.push(`/workspace/${id}/views?newView=true`);
 					} : undefined,
-					items: savedViewItems,
+					items: teamViewItems,
 				});
 			}
+			sections.push({
+				title: "Local Views",
+				icon: UserMultiple02Icon,
+				canAdd: true,
+				onAdd: () => {
+					router.push(`/workspace/${id}/views?newView=true`);
+				},
+				items: localViewItems,
+			});
 			return { title: "Staff", sections, hideHeader: true };
 		}
 

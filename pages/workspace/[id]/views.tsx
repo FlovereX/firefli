@@ -68,10 +68,13 @@ import {
   IconCalendarWeekFilled,
   IconSpeakerphone,
   IconPencil,
+  IconChevronDown,
   IconDeviceFloppy,
   IconExternalLink,
   IconLoader2,
 } from "@tabler/icons-react";
+import { UserGroupIcon, UserMultiple02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 
 type User = {
   info: {
@@ -214,12 +217,15 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
     }[]
   >([]);
   const [savedViews, setSavedViews] = useState<any[]>([]);
+  const [localViews, setLocalViews] = useState<any[]>([]);
   const [isSaveOpen, setIsSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [saveColor, setSaveColor] = useState("");
   const [saveIcon, setSaveIcon] = useState("");
+  const [saveType, setSaveType] = useState<'team' | 'local'>('local');
   const [isEditMode, setIsEditMode] = useState(false);
   const [originalViewConfig, setOriginalViewConfig] = useState<any>(null);
+  const [mobileViewsOpen, setMobileViewsOpen] = useState(false);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [totalUsers, setTotalUsers] = useState(0);
 
@@ -468,28 +474,33 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
   const loadSavedViews = async () => {
     try {
       const res = await axios.get(`/api/workspace/${router.query.id}/views`);
-      if (res.data && res.data.views) setSavedViews(res.data.views || []);
+      if (res.data) {
+        setSavedViews(res.data.views || []);
+        setLocalViews(res.data.localViews || []);
+      }
     } catch (e) {
-      console.error("Failed to load saved views", e);
+      console.error("Failed to load views", e);
     }
   };
 
   useEffect(() => {
-    if (router.query.id && hasUseSavedViews()) loadSavedViews();
+    if (router.query.id) loadSavedViews();
   }, [router.query.id]);
+
+  const allViews = [...savedViews, ...localViews];
 
   useEffect(() => {
     const viewId = router.query.view as string;
-    if (viewId && savedViews.length > 0) {
-      const view = savedViews.find((v) => v.id === viewId);
+    if (viewId && allViews.length > 0) {
+      const view = allViews.find((v) => v.id === viewId);
       if (view) {
         setSelectedViewId(viewId);
         applySavedView(view);
       }
-    } else if (!viewId && savedViews.length > 0) {
+    } else if (!viewId && allViews.length > 0) {
       resetToDefault();
     }
-  }, [router.query.view, savedViews]);
+  }, [router.query.view, savedViews, localViews]);
 
   useEffect(() => {
     if (router.query.newView === 'true') {
@@ -597,6 +608,7 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
     setSaveName("");
     setSaveColor("");
     setSaveIcon("");
+    setSaveType(hasCreateViews() ? 'team' : 'local');
     setIsSaveOpen(true);
   };
 
@@ -610,23 +622,29 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
         filtersPayload.sorting = sorting;
       }
 
+      const isLocal = saveType === 'local';
       const payload = {
         name: saveName || `View ${new Date().toISOString()}`,
         color: saveColor || null,
         icon: saveIcon || null,
         filters: filtersPayload,
         columnVisibility,
+        isLocal,
       };
       const res = await axios.post(
         `/api/workspace/${router.query.id}/views`,
         payload
       );
       if (res.data && res.data.view) {
-        setSavedViews((prev) => [...prev, res.data.view]);
+        if (isLocal) {
+          setLocalViews((prev) => [...prev, res.data.view]);
+        } else {
+          setSavedViews((prev) => [...prev, res.data.view]);
+        }
         window.dispatchEvent(new CustomEvent('savedViewsChanged'));
       }
       setIsSaveOpen(false);
-      toast.success("View created!");
+      toast.success(isLocal ? "Local view created!" : "Team view created!");
     } catch (e) {
       toast.error("Failed to create view.");
     }
@@ -636,6 +654,7 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
     try {
       await axios.delete(`/api/workspace/${router.query.id}/views/${id}`);
       setSavedViews((prev) => prev.filter((v) => v.id !== id));
+      setLocalViews((prev) => prev.filter((v) => v.id !== id));
       toast.success("View deleted!");
     } catch (e) {
       toast.error("Failed to delete view.");
@@ -715,6 +734,13 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
         );
 
         setSavedViews((prev) =>
+          prev.map((v) =>
+            v.id === selectedViewId
+              ? { ...v, filters: filtersPayload, columnVisibility }
+              : v
+          )
+        );
+        setLocalViews((prev) =>
           prev.map((v) =>
             v.id === selectedViewId
               ? { ...v, filters: filtersPayload, columnVisibility }
@@ -905,7 +931,7 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
                 <div className="bg-white dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 space-y-3">
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-semibold text-zinc-900 dark:text-white">
-                      Saved Views
+                      Team Views
                     </h4>
                     {hasCreateViews() && (
                       <button
@@ -920,7 +946,7 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
                   <div className="space-y-2">
                     {savedViews.length === 0 && (
                       <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                        No saved views
+                        No team views
                       </p>
                     )}
                     {savedViews.map((v) => (
@@ -988,43 +1014,36 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
           )}
 
           {/* Mobile dropdown for saved views */}
-          {hasUseSavedViews() && (
-            <div className="md:hidden w-full mb-4">
-              <div className="bg-white dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-md flex items-center justify-center bg-zinc-100 dark:bg-zinc-700/30 text-zinc-700 dark:text-zinc-200">
-                    <IconUsers className="w-4 h-4" />
-                  </span>
-                  <span className="text-sm font-medium text-zinc-900 dark:text-white">
-                    {savedViews.find((s) => s.id === selectedViewId)?.name ||
-                      "Views"}
-                  </span>
-                </div>
-
-                {hasCreateViews() && (
+            <div className="md:hidden w-full mb-4 max-w-[200px]">
+              <div className="bg-white dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700 rounded-lg p-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">VIEWS</span>
                   <button
                     onClick={openSaveDialog}
                     title="Create View"
-                    className="p-1.5 rounded-md text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition"
+                    className="p-1 rounded-md text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition"
                   >
-                    <IconPlus className="w-4 h-4" />
+                    <IconPlus className="w-3.5 h-3.5" />
                   </button>
-                )}
-              </div>
-
-              <div className="space-y-2 mt-3">
-                {savedViews.length === 0 && (
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                    No saved views
+                </div>
+                <div className="space-y-0.5 max-h-64 overflow-y-auto">
+                {savedViews.length === 0 && localViews.length === 0 && (
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 px-1.5 py-1">
+                    No views
                   </p>
+                )}
+                {savedViews.length > 0 && (
+                  <div className="flex items-center gap-1 px-1 py-1">
+                    <HugeiconsIcon icon={UserGroupIcon} className="w-3 h-3 text-zinc-500 dark:text-zinc-400" />
+                    <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Team</p>
+                  </div>
                 )}
                 {savedViews.map((v) => (
                   <div
                     key={v.id}
-                    className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md ${
+                    className={`flex items-center justify-between gap-1.5 px-1.5 py-1 rounded-md ${
                       selectedViewId === v.id
-                        ? "bg-zinc-50 dark:bg-zinc-800/40 border-l-4 border-[color:rgb(var(--group-theme))]"
+                        ? "bg-zinc-50 dark:bg-zinc-800/40 border-l-2 border-[color:rgb(var(--group-theme))]"
                         : "hover:bg-zinc-50 dark:hover:bg-zinc-700/40"
                     }`}
                     style={{ minWidth: 0 }}
@@ -1037,50 +1056,103 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
                           applySavedView(v);
                         }
                       }}
-                      className="flex items-center gap-3 text-left w-full"
+                      className="flex items-center gap-1.5 text-left w-full min-w-0"
                     >
                       <span
-                        className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
+                        className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0"
                         style={{ background: v.color || "#e5e7eb" }}
                       >
                         {v.icon ? (
                           renderIcon(
                             v.icon,
-                            "w-4 h-4 text-zinc-900 dark:text-white"
+                            "w-3 h-3 text-zinc-900 dark:text-white"
                           )
                         ) : (
-                          <span className="text-sm font-medium text-zinc-900 dark:text-white">
+                          <span className="text-xs font-medium text-zinc-900 dark:text-white">
                             {(v.name || "").charAt(0).toUpperCase()}
                           </span>
                         )}
                       </span>
-
-                      <span className="text-sm font-medium truncate text-zinc-900 dark:text-white">
+                      <span className="text-xs font-medium truncate text-zinc-900 dark:text-white">
                         {v.name}
                       </span>
                     </button>
-
-                    <div className="flex items-center gap-1">
-                      {hasDeleteViews() && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setViewToDelete(v.id);
-                            setShowDeleteModal(true);
-                          }}
-                          className="p-1.5 rounded-md text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition"
-                          title="Delete View"
-                        >
-                          <IconX className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
+                    {hasDeleteViews() && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setViewToDelete(v.id);
+                          setShowDeleteModal(true);
+                        }}
+                        className="p-0.5 rounded text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition flex-shrink-0"
+                        title="Delete View"
+                      >
+                        <IconX className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {localViews.length > 0 && (
+                  <div className="flex items-center gap-1 px-1 py-1 mt-1.5">
+                    <HugeiconsIcon icon={UserMultiple02Icon} className="w-3 h-3 text-zinc-500 dark:text-zinc-400" />
+                    <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Local</p>
+                  </div>
+                )}
+                {localViews.map((v) => (
+                  <div
+                    key={v.id}
+                    className={`flex items-center justify-between gap-1.5 px-1.5 py-1 rounded-md ${
+                      selectedViewId === v.id
+                        ? "bg-zinc-50 dark:bg-zinc-800/40 border-l-2 border-[color:rgb(var(--group-theme))]"
+                        : "hover:bg-zinc-50 dark:hover:bg-zinc-700/40"
+                    }`}
+                    style={{ minWidth: 0 }}
+                  >
+                    <button
+                      onClick={() => {
+                        if (selectedViewId === v.id) resetToDefault();
+                        else {
+                          setSelectedViewId(v.id);
+                          applySavedView(v);
+                        }
+                      }}
+                      className="flex items-center gap-1.5 text-left w-full min-w-0"
+                    >
+                      <span
+                        className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0"
+                        style={{ background: v.color || "#e5e7eb" }}
+                      >
+                        {v.icon ? (
+                          renderIcon(
+                            v.icon,
+                            "w-3 h-3 text-zinc-900 dark:text-white"
+                          )
+                        ) : (
+                          <span className="text-xs font-medium text-zinc-900 dark:text-white">
+                            {(v.name || "").charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-xs font-medium truncate text-zinc-900 dark:text-white">
+                        {v.name}
+                      </span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setViewToDelete(v.id);
+                        setShowDeleteModal(true);
+                      }}
+                      className="p-0.5 rounded text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition flex-shrink-0"
+                      title="Delete View"
+                    >
+                      <IconX className="w-3 h-3" />
+                    </button>
                   </div>
                 ))}
               </div>
             </div>
             </div>
-          )}
 
           <div className="flex-1">
             <div className="bg-white dark:bg-zinc-800/50 backdrop-blur-sm border border-zinc-200 dark:border-zinc-700/50 rounded-lg p-4 mb-6 relative z-10 overflow-visible">
@@ -1291,7 +1363,7 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
                   )}
                 </div>
 
-                {selectedViewId !== null && hasManageViews() && (
+                {selectedViewId !== null && (hasManageViews() || localViews.some(v => v.id === selectedViewId)) && (
                   <button
                     onClick={handleEditOrSaveView}
                     className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-all bg-zinc-50 dark:bg-zinc-700/50 border-zinc-200 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-white"
@@ -1754,7 +1826,7 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
                       className="flex items-center justify-between mb-3"
                     >
                       <h3 className="text-lg font-medium text-zinc-900 dark:text-white">
-                        Save View
+                        Create View
                       </h3>
                       <button
                         onClick={() => setIsSaveOpen(false)}
@@ -1764,6 +1836,54 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
                       </button>
                     </Dialog.Title>
                     <div className="mt-3 space-y-3">
+                      {hasCreateViews() ? (
+                        <div>
+                          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-2">
+                            View Type <span className="text-red-500">*</span>
+                          </label>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setSaveType('team')}
+                              className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg border transition-all ${
+                                saveType === 'team'
+                                  ? 'bg-[color:rgb(var(--group-theme))] text-white border-transparent'
+                                  : 'bg-zinc-50 dark:bg-zinc-700/50 border-zinc-200 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
+                              }`}
+                            >
+                              <div className="flex items-center justify-center gap-2">
+                                <IconUsers className="w-4 h-4" />
+                                Team
+                              </div>
+                              <p className={`text-xs mt-1 ${saveType === 'team' ? 'text-white/70' : 'text-zinc-500 dark:text-zinc-400'}`}>Visible to everyone</p>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSaveType('local')}
+                              className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg border transition-all ${
+                                saveType === 'local'
+                                  ? 'bg-[color:rgb(var(--group-theme))] text-white border-transparent'
+                                  : 'bg-zinc-50 dark:bg-zinc-700/50 border-zinc-200 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
+                              }`}
+                            >
+                              <div className="flex items-center justify-center gap-2">
+                                <IconLock className="w-4 h-4" />
+                                Local
+                              </div>
+                              <p className={`text-xs mt-1 ${saveType === 'local' ? 'text-white/70' : 'text-zinc-500 dark:text-zinc-400'}`}>Only visible to you</p>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <IconLock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            <p className="text-sm text-blue-800 dark:text-blue-300">
+                              Creating a <span className="font-semibold">local view</span> (only visible to you)
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       <div>
                         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-2">
                           Name <span className="text-red-500">*</span>
@@ -1878,7 +1998,7 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
                 Confirm Deletion
               </h2>
               <p className="text-sm text-zinc-600 dark:text-zinc-300">
-                Are you sure you want to delete this saved view?</p>
+                Are you sure you want to delete this view?</p>
               <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-6">This action cannot be undone.</p>
               <div className="flex justify-center gap-4">
                 <button

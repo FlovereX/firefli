@@ -30,8 +30,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     if (req.method === "GET") {
       if (!req.session?.userid) return res.status(401).json({ success: false, error: "Unauthorized" });
+      const userId = BigInt(req.session.userid);
       const user = await prisma.user.findFirst({
-        where: { userid: BigInt(req.session.userid) },
+        where: { userid: userId },
         include: {
           roles: { where: { workspaceGroupId: workspaceId } },
           workspaceMemberships: { where: { workspaceGroupId: workspaceId } },
@@ -41,15 +42,26 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const membership = user.workspaceMemberships[0];
       const isAdmin = membership?.isAdmin || false;
       const hasUseViewsPermission = isAdmin || user.roles[0].permissions.includes("use_views");
-      if (!hasUseViewsPermission) return res.status(403).json({ success: false, error: "Insufficient permissions" });
-      const views = await prisma.savedView.findMany({ where: { workspaceGroupId: workspaceId }, orderBy: { createdAt: 'asc' } });
-      return res.status(200).json({ success: true, views });
+      const localViews = await prisma.savedView.findMany({
+        where: { workspaceGroupId: workspaceId, isLocal: true, createdBy: userId },
+        orderBy: { createdAt: 'asc' },
+      });
+      const teamViews = hasUseViewsPermission
+        ? await prisma.savedView.findMany({
+            where: { workspaceGroupId: workspaceId, isLocal: false },
+            orderBy: { createdAt: 'asc' },
+          })
+        : [];
+
+      const serializeView = (v: any) => ({ ...v, createdBy: v.createdBy ? v.createdBy.toString() : null });
+      return res.status(200).json({ success: true, views: teamViews.map(serializeView), localViews: localViews.map(serializeView) });
     }
 
     if (req.method === "POST") {
       if (!req.session?.userid) return res.status(401).json({ success: false, error: "Unauthorized" });
+      const userId = BigInt(req.session.userid);
       const user = await prisma.user.findFirst({
-        where: { userid: BigInt(req.session.userid) },
+        where: { userid: userId },
         include: {
           roles: { where: { workspaceGroupId: workspaceId } },
           workspaceMemberships: { where: { workspaceGroupId: workspaceId } },
@@ -58,11 +70,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       if (!user || !user.roles.length) return res.status(401).json({ success: false, error: "Unauthorized" });
       const membership = user.workspaceMemberships[0];
       const isAdmin = membership?.isAdmin || false;
-      const hasCreatePermission = isAdmin || user.roles[0].permissions.includes("create_views");
-      if (!hasCreatePermission) return res.status(401).json({ success: false, error: "Unauthorized" });
 
-      const { name, color, icon, filters, columnVisibility } = req.body;
+      const { name, color, icon, filters, columnVisibility, isLocal } = req.body;
       if (!name) return res.status(400).json({ success: false, error: "Missing name" });
+      if (isLocal) {
+        // local view creation ONLY
+      } else {
+        const hasCreatePermission = isAdmin || user.roles[0].permissions.includes("create_views");
+        if (!hasCreatePermission) return res.status(401).json({ success: false, error: "Unauthorized" });
+      }
 
       const newView = await prisma.savedView.create({
         data: {
@@ -73,15 +89,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           icon: icon || null,
           filters: filters || [],
           columnVisibility: columnVisibility || {},
+          isLocal: isLocal || false,
+          createdBy: isLocal ? userId : null,
         },
       });
 
-      return res.status(201).json({ success: true, view: newView });
+      return res.status(201).json({ success: true, view: { ...newView, createdBy: newView.createdBy ? newView.createdBy.toString() : null } });
     }
 
     return res.status(405).json({ success: false, error: "Method not allowed" });
   } catch (e) {
-    console.error("Saved views API error:", e);
+    console.error("Views API error:", e);
     return res.status(500).json({ success: false, error: "Internal server error" });
   }
 }
