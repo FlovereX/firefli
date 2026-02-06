@@ -150,7 +150,7 @@ const Home: pageWithLayout = () => {
                 <span className="text-sm font-medium text-primary/80 mb-1 block">
                   Welcome back
                 </span>
-                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-zinc-900 dark:text-white mb-2 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 truncate">
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-zinc-900 dark:text-white mb-2 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 truncate pb-1">
                   {text}
                 </h1>
                 <div
