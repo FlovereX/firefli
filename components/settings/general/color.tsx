@@ -28,14 +28,6 @@ const Color: FC<props> = ({ triggerToast, isSidebarExpanded }) => {
     workspace?.groupTheme || ""
   );
   const [customColor, setCustomColor] = useState<string>("#3498db");
-  const [sessionColors, setSessionColors] = useState<SessionColors>({
-    recurring: "bg-blue-500",
-    shift: "bg-green-500",
-    training: "bg-yellow-500",
-    event: "bg-purple-500",
-    other: "bg-zinc-500",
-  });
-  const [isLoadingSessionColors, setIsLoadingSessionColors] = useState(false);
   const [colorPickerTimeout, setColorPickerTimeout] = useState<NodeJS.Timeout | null>(null);
   const isFirefliApp = process.env.NEXT_PUBLIC_NEXTAUTH_URL === "https://app.firefli.net" || process.env.NEXT_PUBLIC_NEXTAUTH_URL === "https://ant.firefli.net";
 
@@ -48,28 +40,6 @@ const Color: FC<props> = ({ triggerToast, isSidebarExpanded }) => {
       }
     }
   }, [workspace?.groupTheme]);
-
-  useEffect(() => {
-    loadSessionColors();
-  }, [workspace?.groupId]);
-
-  const loadSessionColors = async () => {
-    if (!workspace?.groupId) return;
-
-    try {
-      setIsLoadingSessionColors(true);
-      const response = await axios.get(
-        `/api/workspace/${workspace.groupId}/settings/general/session-colors`
-      );
-      if (response.data.success && response.data.colors) {
-        setSessionColors(response.data.colors);
-      }
-    } catch (error) {
-      console.error("Failed to load session colours:", error);
-    } finally {
-      setIsLoadingSessionColors(false);
-    }
-  };
 
   const updateColor = async (color: string) => {
     try {
@@ -143,30 +113,6 @@ const Color: FC<props> = ({ triggerToast, isSidebarExpanded }) => {
     }
   };
 
-  const updateSessionColor = async (
-    colorType: keyof SessionColors,
-    color: string
-  ) => {
-    try {
-      const newColors = { ...sessionColors, [colorType]: color };
-      setSessionColors(newColors);
-
-      const res = await axios.patch(
-        `/api/workspace/${workspace.groupId}/settings/general/session-colors`,
-        { colors: newColors }
-      );
-
-      if (res.status === 200) {
-        triggerToast.success("Session colours updated successfully!");
-      } else {
-        triggerToast.error("Failed to update session colours.");
-        setSessionColors(sessionColors);
-      }
-    } catch (error) {
-      triggerToast.error("Something went wrong.");
-      setSessionColors(sessionColors);
-    }
-  };
 
   const handleRevert = () => {
     const previousColor = workspace?.groupTheme || "bg-pink-500";
@@ -212,46 +158,6 @@ const Color: FC<props> = ({ triggerToast, isSidebarExpanded }) => {
     "bg-violet-600",
   ];
 
-  const sessionColorOptions = [
-    "bg-blue-500",
-    "bg-red-500",
-    "bg-red-700",
-    "bg-green-500",
-    "bg-green-600",
-    "bg-yellow-500",
-    "bg-orange-500",
-    "bg-purple-500",
-    "bg-pink-500",
-    "bg-zinc-500",
-  ];
-
-  const sessionColorTypes = [
-    {
-      key: "recurring" as keyof SessionColors,
-      label: "Recurring Sessions",
-      description: 'Color for "Recurring" tag',
-    },
-    {
-      key: "shift" as keyof SessionColors,
-      label: "Shift Sessions",
-      description: 'Color for "Shift" sessions',
-    },
-    {
-      key: "training" as keyof SessionColors,
-      label: "Training Sessions",
-      description: 'Color for "Training" sessions',
-    },
-    {
-      key: "event" as keyof SessionColors,
-      label: "Event Sessions",
-      description: 'Color for "Event" sessions',
-    },
-    {
-      key: "other" as keyof SessionColors,
-      label: "Other Sessions",
-      description: 'Color for "Other" sessions',
-    },
-  ];
 
   return (
     <div className="ml-0 space-y-8">
@@ -323,92 +229,9 @@ const Color: FC<props> = ({ triggerToast, isSidebarExpanded }) => {
           )}
         </div>
       </div>
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <IconPalette size={20} className="text-primary" />
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">
-            Session Colours
-          </h3>
-        </div>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4 text-left">
-          Customise colours for different session types and tags
-        </p>
-
-        {isLoadingSessionColors ? (
-          <div className="text-center py-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2">
-              Loading session colours...
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {sessionColorTypes.map((colorType) => (
-              <div
-                key={colorType.key}
-                className="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 p-4 flex flex-col gap-3"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-zinc-900 dark:text-white text-sm">
-                      {colorType.label}
-                    </h4>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                      {colorType.description}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={clsx(
-                        "px-2.5 py-1 rounded-full text-xs text-white font-medium shadow-sm",
-                        sessionColors[colorType.key]
-                      )}
-                    >
-                      {colorType.key === "recurring"
-                        ? "Recurring"
-                        : colorType.label.split(" ")[0]}
-                    </span>
-                  </div>
-                </div>
-                <select
-                  value={sessionColors[colorType.key]}
-                  onChange={(e) =>
-                    updateSessionColor(colorType.key, e.target.value)
-                  }
-                  className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                >
-                  {sessionColorOptions.map((color) => (
-                    <option key={color} value={color}>
-                      {getColorDisplayName(color)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 };
-
-function getColorDisplayName(color: string): string {
-  const colorDisplayMap: Record<string, string> = {
-    "bg-firefli": "Firefli",
-    "bg-blue-500": "Blue",
-    "bg-red-500": "Red",
-    "bg-red-700": "Dark Red",
-    "bg-green-500": "Green",
-    "bg-green-600": "Dark Green",
-    "bg-yellow-500": "Yellow",
-    "bg-orange-500": "Orange",
-    "bg-purple-500": "Purple",
-    "bg-pink-500": "Pink",
-    "bg-zinc-500": "Gray",
-  };
-
-  return colorDisplayMap[color] || color.replace("bg-", "").replace("-", " ");
-}
 
 function getRGBFromTailwindColor(tw: any): string {
   const fallback = "236, 72, 153";
