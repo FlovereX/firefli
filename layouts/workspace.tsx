@@ -97,6 +97,7 @@ const workspace: LayoutProps = ({ children }) => {
 	const [savedViews, setSavedViews] = useState<Array<{id: string; name: string; color?: string; icon?: string}>>([]);
 	const [localViews, setLocalViews] = useState<Array<{id: string; name: string; color?: string; icon?: string}>>([]);
 	const [savedViewsLoaded, setSavedViewsLoaded] = useState(false);
+	const [pendingPolicyCount, setPendingPolicyCount] = useState(0);
 
 	const useTheme = (groupTheme: string) => {
 		// Handle custom colors
@@ -198,6 +199,19 @@ const workspace: LayoutProps = ({ children }) => {
 			loadSavedViews();
 		}
 	}, [isStaffSection, savedViewsLoaded, loadSavedViews]);
+
+	useEffect(() => {
+		if (workspace.settings?.policiesEnabled && router.query.id) {
+			fetch(`/api/workspace/${router.query.id}/policies/pending`)
+				.then(res => res.json())
+				.then(data => {
+					if (data.success) {
+						setPendingPolicyCount(data.count);
+					}
+				})
+				.catch(() => setPendingPolicyCount(0));
+		}
+	}, [router.query.id, workspace.settings?.policiesEnabled]);
 
 	useEffect(() => {
 		const handleSavedViewsChanged = () => {
@@ -428,6 +442,7 @@ const workspace: LayoutProps = ({ children }) => {
 							label: "Policies",
 							href: `/workspace/${id}/policies`,
 							icon: UserShield01Icon,
+							badge: pendingPolicyCount > 0 ? pendingPolicyCount : undefined,
 						},
 					],
 				},
@@ -530,7 +545,7 @@ const workspace: LayoutProps = ({ children }) => {
 		}
 
 		return null;
-	}, [router.asPath, router.query.id, router.query.section, savedViews, localViews, router, workspace.isAdmin, workspace.yourPermission, workspace.settings?.guidesEnabled, workspace.settings?.policiesEnabled, workspace.settings?.leaderboardEnabled, workspace.settings?.sessionsEnabled, deleteSavedView]);
+	}, [router.asPath, router.query.id, router.query.section, savedViews, localViews, router, workspace.isAdmin, workspace.yourPermission, workspace.settings?.guidesEnabled, workspace.settings?.policiesEnabled, workspace.settings?.leaderboardEnabled, workspace.settings?.sessionsEnabled, deleteSavedView, pendingPolicyCount]);
 
 	const showSecondarySidebar = !!getSecondarySidebar;
 	const workspaceBg = workspace && workspace.groupTheme ? "" : "bg-firefli";

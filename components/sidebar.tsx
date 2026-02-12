@@ -416,7 +416,7 @@ const Sidebar: NextPage = () => {
         )}
       >
         <div className="h-full flex flex-col p-2 pb-2 gap-1 overflow-visible">
-          <nav className="flex-1 space-y-1 flex flex-col items-center overflow-y-auto overflow-x-visible min-h-0 px-1 scrollbar-hide">
+          <nav className="flex-1 space-y-1 flex flex-col items-center overflow-y-auto overflow-x-visible min-h-0 px-1 py-1 scrollbar-hide">
             {sections.map((section) => {
               if (section.accessible === undefined || section.accessible) {
                 const isActive = section.matchPaths
@@ -425,36 +425,38 @@ const Sidebar: NextPage = () => {
                 const isHugeIcon = Array.isArray(section.icon);
                 return (
                   <SidebarTooltip key={section.name} label={section.name}>
-                    <button
-                      onClick={() => {
-                        if (section.href) {
-                          gotopage(section.href);
-                        }
-                      }}
-                      className={clsx(
-                        "rounded-lg transition-all duration-200 ease-in-out relative flex items-center justify-center w-12 h-12",
-                        isActive
-                          ? "bg-[color:rgb(var(--group-theme)/0.1)] text-[color:rgb(var(--group-theme))] scale-105"
-                          : "text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:scale-105",
-                      )}
-                      aria-label={section.name}
-                    >
-                      {isHugeIcon ? (
-                        <HugeiconsIcon icon={section.icon as IconSvgElement} className="w-5 h-5" strokeWidth={1.5} />
-                      ) : (
-                        (() => { const IconComponent = section.icon as React.ElementType; return <IconComponent className="w-5 h-5" />; })()
-                      )}
+                    <div className="relative">
+                      <button
+                        onClick={() => {
+                          if (section.href) {
+                            gotopage(section.href);
+                          }
+                        }}
+                        className={clsx(
+                          "rounded-lg transition-all duration-200 ease-in-out flex items-center justify-center w-12 h-12",
+                          isActive
+                            ? "bg-[color:rgb(var(--group-theme)/0.1)] text-[color:rgb(var(--group-theme))] scale-105"
+                            : "text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:scale-105",
+                        )}
+                        aria-label={section.name}
+                      >
+                        {isHugeIcon ? (
+                          <HugeiconsIcon icon={section.icon as IconSvgElement} className="w-5 h-5" strokeWidth={1.5} />
+                        ) : (
+                          (() => { const IconComponent = section.icon as React.ElementType; return <IconComponent className="w-5 h-5" />; })()
+                        )}
+                      </button>
                       {section.name === "Docs" && pendingPolicyCount > 0 && (
-                        <span className="absolute -top-1 right-0 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                        <span className="absolute -top-1 right-0 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center pointer-events-none">
                           {pendingPolicyCount > 9 ? '9+' : pendingPolicyCount}
                         </span>
                       )}
                       {section.name === "Staff" && pendingNoticesCount > 0 && (
-                        <span className="absolute -top-1 right-0 min-w-[18px] h-[18px] px-1 bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                        <span className="absolute -top-1 right-0 min-w-[18px] h-[18px] px-1 bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center pointer-events-none">
                           {pendingNoticesCount > 9 ? '9+' : pendingNoticesCount}
                         </span>
                       )}
-                    </button>
+                    </div>
                   </SidebarTooltip>
                 );
               }
