@@ -6,6 +6,7 @@ import prisma from '@/utils/database';
 import { withSessionRoute } from '@/lib/withSession'
 import { getUsername, getThumbnail, getDisplayName } from '@/utils/userinfoEngine'
 import { getRegistry } from '@/utils/registryManager';
+import { getCurrentBatch } from '@/utils/batchScheduler';
 import * as noblox from 'noblox.js'
 
 type User = {
@@ -82,6 +83,9 @@ export async function handler(
 		console.error('Failed to fetch group info during workspace creation:', err);
 	}
 
+	  const isMultiContainer = process.env.NEXT_MULTI?.toLowerCase() === 'true';
+	  const batchId = isMultiContainer ? getCurrentBatch() : null;
+
 	  const workspace = await prisma.$transaction(async (tx) => {
 		await tx.user.upsert({
 			where: { userid: req.session.userid },
@@ -95,7 +99,8 @@ export async function handler(
 		  groupName,
 		  groupLogo,
 		  lastSynced: new Date(),
-		  ownerId: BigInt(req.session.userid)
+		  ownerId: BigInt(req.session.userid),
+		  batchId
 			}
 		})
 
