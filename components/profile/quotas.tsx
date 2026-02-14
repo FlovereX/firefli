@@ -30,7 +30,7 @@ export function QuotasProgress({
     if (!quota || !quota.value) {
       return 0;
     }
-    if (quota.percentage !== undefined) {
+    if (quota.type !== "custom" && quota.percentage !== undefined) {
       return quota.percentage;
     }
     switch (quota.type) {
@@ -163,8 +163,8 @@ export function QuotasProgress({
                 </span>
                 <span className="text-sm font-bold text-zinc-900 dark:text-white">
                   {getQuotaProgress(quota)}
-                </span>
-              </div>
+                </span></div>
+              
               <div className="w-full bg-zinc-200 dark:bg-zinc-600 rounded-full h-3">
                 <div
                   className={`h-3 rounded-full transition-all ${
