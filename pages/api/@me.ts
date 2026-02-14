@@ -25,6 +25,7 @@ type Data = {
 		groupId: number
 		groupThumbnail: string
 		groupName: string
+		ownerId: number | null
 	}[]
 }
 
@@ -96,13 +97,14 @@ export async function handler(
 			dbuser.roles.map(async (role) => {
 				const workspace = await prisma.workspace.findUnique({
 					where: { groupId: role.workspaceGroupId },
-					select: { groupName: true, groupLogo: true, lastSynced: true }
+					select: { groupName: true, groupLogo: true, lastSynced: true, ownerId: true }
 				});
 				
 				return {
 					groupId: role.workspaceGroupId,
 					groupThumbnail: workspace?.groupLogo,
 					groupName: workspace?.groupName,
+					ownerId: workspace?.ownerId ? Number(workspace.ownerId) : null,
 				};
 			})
 		);

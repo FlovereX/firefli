@@ -6,6 +6,7 @@ export type workspaceinfo = {
 	groupId: number;
 				groupThumbnail: string;
 				groupName: string
+				ownerId?: number | null;
 }
 
 export type LoginState = {

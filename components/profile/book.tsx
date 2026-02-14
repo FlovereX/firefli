@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FC } from "@/types/settingsComponent";
 import { useRecoilState } from "recoil";
-import { workspacestate } from "@/state";
+import { workspacestate, loginState } from "@/state";
 import {
   IconPencil,
   IconCheck,
@@ -37,6 +37,7 @@ const Book: FC<Props> = ({ userBook, onRefetch, logbookPermissions }) => {
   const router = useRouter();
   const { id } = router.query;
   const [workspace, setWorkspace] = useRecoilState(workspacestate);
+  const [login] = useRecoilState(loginState);
   const [text, setText] = useState("");
   const [type, setType] = useState("note");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -246,12 +247,12 @@ const Book: FC<Props> = ({ userBook, onRefetch, logbookPermissions }) => {
     return (workspace?.yourPermission || []).includes("manage_members");
   };
 
-  const isOwner = (workspace: any) => {
+  const isOwner = () => {
     try {
-      if (!workspace?.yourRole) return false;
-      return workspace.roles?.some(
-        (r: any) => r.id === workspace.yourRole && r.isOwnerRole
-      );
+      // Check if the current user is the workspace owner by comparing ownerId from workspaces array
+      if (!login?.userId || !login?.workspaces) return false;
+      const currentWorkspace = login.workspaces.find((ws: any) => ws.groupId === workspace.groupId);
+      return currentWorkspace?.ownerId === login.userId;
     } catch (e) {
       return false;
     }
@@ -714,7 +715,7 @@ const Book: FC<Props> = ({ userBook, onRefetch, logbookPermissions }) => {
                           {entry.redacted ? "Undo" : "Redact"}
                         </button>
                       )}
-                      {isOwner(workspace) && (
+                      {isOwner() && (
                         <button
                           onClick={() => deleteEntry(entry)}
                           className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors"

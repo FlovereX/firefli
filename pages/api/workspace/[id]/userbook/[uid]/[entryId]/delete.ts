@@ -21,25 +21,20 @@ export async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
   const workspaceGroupId = parseInt(id as string);
 
   try {
-    const currentUser = await prisma.user.findFirst({
-      where: { userid: BigInt(req.session.userid as number) },
-      include: {
-        roles: {
-          where: { workspaceGroupId: workspaceGroupId },
-        },
-        workspaceMemberships: {
-          where: { workspaceGroupId: workspaceGroupId },
-        },
-      },
+    const workspace = await prisma.workspace.findUnique({
+      where: { groupId: workspaceGroupId },
+      select: { ownerId: true },
     });
 
-    if (!currentUser || !currentUser.roles || currentUser.roles.length === 0)
-      return res.status(401).json({ success: false, error: "Unauthorized." });
+    if (!workspace) {
+      return res.status(404).json({ success: false, error: "Workspace not found." });
+    }
 
-    const membership = currentUser.workspaceMemberships[0];
-    const isAdmin = membership?.isAdmin || false;
-    if (!isAdmin)
-      return res.status(401).json({ success: false, error: "Only owners may delete entries." });
+    const isOwner = workspace.ownerId && workspace.ownerId === BigInt(req.session.userid as number);
+    
+    if (!isOwner) {
+      return res.status(403).json({ success: false, error: "Only workspace owners may delete entries." });
+    }
 
     const entry = await prisma.userBook.findUnique({ where: { id: entryId as string } });
     if (!entry) return res.status(404).json({ success: false, error: "Entry not found." });

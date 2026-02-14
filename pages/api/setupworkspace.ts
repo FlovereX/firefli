@@ -143,6 +143,7 @@ export async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
           groupId: groupIdNumber,
           groupName,
           groupLogo,
+          ownerId: BigInt(userid),
           lastSynced: new Date()
         },
       })
