@@ -116,11 +116,58 @@ function getRGBFromTailwindColor(tw: any): string {
   return colorMap[colorName] || fallback;
 }
 
+function InstanceError({ missing }: { missing: string[] }) {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-zinc-50 dark:bg-zinc-900 p-4">
+      <div className="max-w-md w-full text-center space-y-6">
+        <div className="w-16 h-16 mx-auto rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+          <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Instance Not Available</h1>
+          <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+            Contact an administrator — this instance has not been configured correctly.
+          </p>
+        </div>
+        <div className="bg-zinc-100 dark:bg-zinc-800 rounded-lg p-4 text-left">
+          <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Missing environment variables:</p>
+          <ul className="space-y-1">
+            {missing.map((v) => (
+              <li key={v} className="text-sm font-mono text-red-600 dark:text-red-400 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                {v}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <p className="text-xs text-zinc-500 dark:text-zinc-500">
+          Add the missing keys to your <code className="px-1 py-0.5 bg-zinc-200 dark:bg-zinc-700 rounded font-mono">.env</code> file and restart the server.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function MyApp({ Component, pageProps }: AppPropsWithLayout) {
   const [loading, setLoading] = useState(true);
+  const [instanceError, setInstanceError] = useState<string[] | null>(null);
   const Layout =
     Component.layout ||
     (({ children }: { children: React.ReactNode }) => <>{children}</>);
+
+  // Check instance configuration on mount
+  useEffect(() => {
+    fetch("/api/instance-check")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.configured) {
+          setInstanceError(data.missing || ["Unknown"]);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Scroll to top on route change
   useEffect(() => {
@@ -132,6 +179,17 @@ function MyApp({ Component, pageProps }: AppPropsWithLayout) {
       Router.events.off("routeChangeComplete", handleRouteChange);
     };
   }, []);
+
+  if (instanceError) {
+    return (
+      <>
+        <Head>
+          <title>Firefli — Instance Error</title>
+        </Head>
+        <InstanceError missing={instanceError} />
+      </>
+    );
+  }
 
   return (
     <RecoilRoot>

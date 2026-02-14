@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import prisma from "@/utils/database";
 import { withPermissionCheck } from "@/utils/permissionsManager";
+import { editSessionNotification } from "@/utils/session-notification";
 
 const roleAssignmentLimits: { [key: string]: { count: number; resetTime: number } } = {};
 function checkRoleAssignmentRateLimit(req: NextApiRequest, res: NextApiResponse): boolean {
@@ -169,6 +170,8 @@ export async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
         ownerId: ownerId ? BigInt(ownerId) : null,
       },
     });
+
+    editSessionNotification(sid as string).catch(() => {});
 
     res.status(200).json({ success: true });
   } catch (error) {

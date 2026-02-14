@@ -4,6 +4,13 @@ import axios from "axios";
 import { IconTag, IconPlus, IconPencil, IconTrash } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 
+const typeOptions = [
+  { value: "shift", label: "Shift" },
+  { value: "training", label: "Training" },
+  { value: "event", label: "Event" },
+  { value: "other", label: "Other" },
+];
+
 const SessionTags = () => {
   const router = useRouter();
   const [tags, setTags] = useState<any[]>([]);
@@ -14,6 +21,7 @@ const SessionTags = () => {
   const [newTagColor, setNewTagColor] = useState("bg-blue-500");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [tagToDelete, setTagToDelete] = useState<string | null>(null);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
 
   const colorOptions = [
     { value: "bg-blue-500", label: "Blue" },
@@ -62,12 +70,14 @@ const SessionTags = () => {
         {
           name: newTagName.trim(),
           color: newTagColor,
+          allowedTypes: selectedTypes,
         },
       );
       if (res.data.success) {
         toast.success("Session tag created");
         setNewTagName("");
         setNewTagColor("bg-blue-500");
+        setSelectedTypes([]);
         setIsEditing(false);
         fetchTags();
       }
@@ -89,6 +99,7 @@ const SessionTags = () => {
           id: editingTag.id,
           name: newTagName.trim(),
           color: newTagColor,
+          allowedTypes: selectedTypes,
         },
       );
       if (res.data.success) {
@@ -96,6 +107,7 @@ const SessionTags = () => {
         setEditingTag(null);
         setNewTagName("");
         setNewTagColor("bg-blue-500");
+        setSelectedTypes([]);
         setIsEditing(false);
         fetchTags();
       }
@@ -137,6 +149,7 @@ const SessionTags = () => {
     setEditingTag(tag);
     setNewTagName(tag.name);
     setNewTagColor(tag.color);
+    setSelectedTypes(tag.allowedTypes || []);
     setIsEditing(true);
   };
 
@@ -144,7 +157,14 @@ const SessionTags = () => {
     setEditingTag(null);
     setNewTagName("");
     setNewTagColor("bg-blue-500");
+    setSelectedTypes([]);
     setIsEditing(false);
+  };
+
+  const toggleType = (type: string) => {
+    setSelectedTypes((prev) =>
+      prev.includes(type) ? prev.filter((x) => x !== type) : [...prev, type]
+    );
   };
 
   return (
@@ -196,6 +216,30 @@ const SessionTags = () => {
                     }`}
                     title={option.label}
                   />
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Restrict to session types (optional)
+              </label>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+                If none selected, this tag will be available on all session types
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {typeOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => toggleType(opt.value)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                      selectedTypes.includes(opt.value)
+                        ? "bg-primary text-white border-primary"
+                        : "bg-white dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-600 hover:border-primary"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
                 ))}
               </div>
             </div>
@@ -251,6 +295,11 @@ const SessionTags = () => {
                 >
                   {tag.name}
                 </span>
+                {tag.allowedTypes?.length > 0 && (
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                    {tag.allowedTypes.map((t: string) => t.charAt(0).toUpperCase() + t.slice(1)).join(", ")}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <button

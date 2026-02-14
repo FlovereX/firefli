@@ -70,6 +70,16 @@ export default withSessionRoute(
         if (!tag) {
           return res.status(404).json({ error: "Tag not found" });
         }
+
+        const sessionCategory = session.type || "other";
+        if (
+          tag.allowedTypes.length > 0 &&
+          !tag.allowedTypes.includes(sessionCategory)
+        ) {
+          return res.status(400).json({
+            error: "This tag is not available for this session type",
+          });
+        }
       }
 
       const oldTagName = session.sessionTag?.name || null;

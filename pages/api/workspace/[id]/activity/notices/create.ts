@@ -6,6 +6,7 @@ import { withSessionRoute } from '@/lib/withSession'
 import { withPermissionCheck } from '@/utils/permissionsManager'
 import { getUsername, getThumbnail, getDisplayName } from '@/utils/userinfoEngine'
 import * as noblox from 'noblox.js'
+import { sendNoticeNotification } from '@/utils/notice-notification'
 type Data = {
 	success: boolean
 	error?: string
@@ -33,6 +34,19 @@ export async function handler(
 				workspaceGroupId: parseInt(req.query.id as string)
 			}
 		});
+
+		// Send notice notification via Discord DM
+		sendNoticeNotification(
+			parseInt(req.query.id as string),
+			Number(req.session.userid),
+			'submit',
+			{
+				id: session.id,
+				startTime: session.startTime,
+				endTime: session.endTime,
+				reason: req.body.reason,
+			}
+		).catch((e) => console.error('[Notice] Failed to send submit notification:', e));
 
 		return res.status(200).json({ success: true, notice: JSON.parse(JSON.stringify(session, (key, value) => (typeof value === 'bigint' ? value.toString() : value))) });
 	} catch (error) {

@@ -233,6 +233,12 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
   const [mobileViewsOpen, setMobileViewsOpen] = useState(false);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [totalUsers, setTotalUsers] = useState(0);
+  const [notifyDiscord, setNotifyDiscord] = useState(false);
+  const [bloxlinkEnabled, setBloxlinkEnabled] = useState(false);
+  const [discordEnabled, setDiscordEnabled] = useState(false);
+  const [kickFromDiscord, setKickFromDiscord] = useState(false);
+  const [banFromDiscord, setBanFromDiscord] = useState(false);
+  const [banDeleteDays, setBanDeleteDays] = useState(0);
 
   const ICON_OPTIONS: { key: string; Icon: any; title?: string }[] = [
     { key: "star", Icon: IconStar, title: "Star" },
@@ -505,6 +511,30 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
   }, [router.query.id]);
 
   const allViews = [...savedViews, ...localViews];
+
+  useEffect(() => {
+    if (!router.query.id) return;
+    const checkBloxlinkStatus = async () => {
+      try {
+        const response = await axios.get(`/api/workspace/${router.query.id}/settings/bloxlink/status`);
+        if (response.data.success && response.data.integration) {
+          setBloxlinkEnabled(response.data.integration.isActive);
+        }
+      } catch (error) {
+        setBloxlinkEnabled(false);
+      }
+    };
+    const checkDiscordStatus = async () => {
+      try {
+        const response = await axios.get(`/api/workspace/${router.query.id}/settings/discord/status`);
+        if (response.data.success && response.data.integration?.isActive) {
+          setDiscordEnabled(true);
+        }
+      } catch (error) {}
+    };
+    checkBloxlinkStatus();
+    checkDiscordStatus();
+  }, [router.query.id]);
 
   useEffect(() => {
     const viewId = router.query.view as string;
@@ -800,10 +830,19 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
           })
         );
       } else {
+        const apiType = type === "fire" ? "termination" : type;
         promises.push(
           axios.post(
             `/api/workspace/${router.query.id}/userbook/${data.info.userId}/new`,
-            { notes: message, type }
+            {
+              notes: message,
+              type: apiType,
+              notifyDiscord: notifyDiscord && bloxlinkEnabled && discordEnabled && (apiType === "warning" || apiType === "promotion" || apiType === "demotion" || apiType === "termination"),
+              ...(apiType === "termination" && notifyDiscord && bloxlinkEnabled && {
+                terminationAction: banFromDiscord ? 'ban' : (kickFromDiscord ? 'kick' : 'none'),
+                ...(banFromDiscord && { banDeleteDays })
+              })
+            }
           )
         );
       }
@@ -821,6 +860,10 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
     setIsOpen(false);
     setMessage("");
     setType("");
+    setNotifyDiscord(false);
+    setKickFromDiscord(false);
+    setBanFromDiscord(false);
+    setBanDeleteDays(0);
   };
 
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -1789,6 +1832,88 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
                         />
                       </div>
                     </FormProvider>
+
+                    {bloxlinkEnabled && discordEnabled && (type === "warning" || type === "promotion" || type === "demotion" || type === "termination" || type === "fire") && (
+                      <div className="mt-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 p-3 rounded-lg">
+                        <div className="flex items-start space-x-3">
+                          <input
+                            id="notify-discord-mass"
+                            type="checkbox"
+                            checked={notifyDiscord}
+                            onChange={(e) => setNotifyDiscord(e.target.checked)}
+                            className="mt-1 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                          />
+                          <label htmlFor="notify-discord-mass" className="text-sm">
+                            <div className="font-medium text-blue-800 dark:text-blue-200">
+                              Notify users via Discord DM
+                            </div>
+                            <div className="text-xs text-blue-700 dark:text-blue-300">
+                              Send Discord direct messages to all affected users (requires linked Bloxlink accounts)
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    )}
+
+                    {bloxlinkEnabled && (type === "termination" || type === "fire") && notifyDiscord && (
+                      <div className="mt-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 p-4 rounded-lg">
+                        <h4 className="text-sm font-medium text-red-800 dark:text-red-200 mb-3">
+                          Discord Server Actions
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-3">
+                            <input
+                              id="kick-discord-mass"
+                              type="checkbox"
+                              checked={kickFromDiscord}
+                              onChange={(e) => {
+                                setKickFromDiscord(e.target.checked);
+                                if (e.target.checked) setBanFromDiscord(false);
+                              }}
+                              className="w-4 h-4 text-red-600 bg-white border-red-300 rounded focus:ring-red-500 focus:ring-2"
+                            />
+                            <label htmlFor="kick-discord-mass" className="text-sm text-red-700 dark:text-red-300 cursor-pointer">
+                              Kick from Discord server
+                            </label>
+                          </div>
+                          <div className="flex items-start space-x-3">
+                            <input
+                              id="ban-discord-mass"
+                              type="checkbox"
+                              checked={banFromDiscord}
+                              onChange={(e) => {
+                                setBanFromDiscord(e.target.checked);
+                                if (e.target.checked) setKickFromDiscord(false);
+                              }}
+                              className="mt-1 w-4 h-4 text-red-600 bg-white border-red-300 rounded focus:ring-red-500 focus:ring-2"
+                            />
+                            <div className="flex-1">
+                              <label htmlFor="ban-discord-mass" className="text-sm text-red-700 dark:text-red-300 cursor-pointer">
+                                Ban from Discord server
+                              </label>
+                              {banFromDiscord && (
+                                <div className="mt-2">
+                                  <label className="block text-xs text-red-600 dark:text-red-400 mb-1">
+                                    Delete message history:
+                                  </label>
+                                  <select
+                                    value={banDeleteDays}
+                                    onChange={(e) => setBanDeleteDays(parseInt(e.target.value))}
+                                    className="text-xs px-2 py-1 border border-red-200 dark:border-red-600 rounded bg-white dark:bg-zinc-800 text-red-700 dark:text-red-300"
+                                  >
+                                    <option value={0}>Don't delete messages</option>
+                                    <option value={1}>1 day</option>
+                                    <option value={2}>2 days</option>
+                                    <option value={3}>3 days</option>
+                                    <option value={7}>7 days</option>
+                                  </select>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="mt-5 flex justify-end gap-2">
                       <button

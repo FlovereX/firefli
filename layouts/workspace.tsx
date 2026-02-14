@@ -33,6 +33,7 @@ import {
   LockIcon,
   Alert02Icon,
   ServerStack01Icon,
+  DiscordIcon,
 } from "@hugeicons/core-free-icons";
 import {
   IconTrophy,
@@ -464,6 +465,7 @@ const workspace: LayoutProps = ({ children }) => {
 			const canAccessApi = hasPermission('manage_apikeys');
 			const canAccessPermissions = workspace.isAdmin || hasPermission('admin');
 			const canAccessAudit = hasPermission('view_audit_logs');
+			const canAccessIntegrations = workspace.isAdmin || hasPermission('admin');
 			const canAccessInstance = workspace.isAdmin || hasPermission('admin');
 
 			const currentSection = (router.query.section as string) || 'general';
@@ -524,6 +526,14 @@ const workspace: LayoutProps = ({ children }) => {
 					href: `/workspace/${id}/settings?section=audit`,
 					icon: Alert02Icon,
 					active: currentSection === 'audit',
+				});
+			}
+			if (canAccessIntegrations) {
+				settingsItems.push({
+					label: "Discord",
+					href: `/workspace/${id}/settings?section=integrations`,
+					icon: DiscordIcon,
+					active: currentSection === 'integrations',
 				});
 			}
 			if (canAccessInstance) {
