@@ -2,7 +2,7 @@
 
 import type { pageWithLayout } from "@/layoutTypes"
 import { loginState } from "@/state"
-import { IconChevronRight, IconHome, IconLock, IconFlag, IconKey, IconServer, IconBellExclamation, IconHourglassHigh, IconCalendarEvent } from "@tabler/icons-react"
+import { IconChevronRight, IconHome, IconLock, IconFlag, IconKey, IconServer, IconBellExclamation, IconHourglassHigh, IconCalendarEvent, IconBrandDiscord } from "@tabler/icons-react"
 import Permissions from "@/components/settings/permissions"
 import Workspace from "@/layouts/workspace"
 import { useRecoilState } from "recoil"
@@ -11,6 +11,7 @@ import * as All from "@/components/settings/general"
 import * as Api from "@/components/settings/api"
 import * as SessionComponents from "@/components/settings/sessions"
 import * as Instance from "@/components/settings/instance"
+import * as Services from "@/components/settings/services"
 import toast, { Toaster } from "react-hot-toast"
 import * as noblox from "noblox.js"
 import { withPermissionCheckSsr } from "@/utils/permissionsManager"
@@ -61,8 +62,8 @@ export const getServerSideProps: GetServerSideProps = withPermissionCheckSsr(asy
 
   return {
     props: {
-      roles,
-      departments,
+      roles: JSON.parse(JSON.stringify(roles)),
+      departments: JSON.parse(JSON.stringify(departments)),
       grouproles,
       isAdmin,
       userPermissions,
@@ -154,6 +155,16 @@ const SECTIONS = {
     description: "View workspace audit events and filters",
     components: [],
   },
+  integrations: {
+    name: "Discord",
+    icon: IconBrandDiscord,
+    description: "Configure Discord bot and Bloxlink integrations",
+    components: Object.entries(Services).map(([key, Component]) => ({
+      key,
+      component: Component,
+      title: Component.title,
+    })),
+  },
   instance: {
     name: "Services",
     icon: IconServer,
@@ -182,6 +193,7 @@ const Settings: pageWithLayout<Props> = ({ roles, departments, grouproles, isAdm
   const canAccessApi = hasPermission('manage_apikeys');
   const canAccessPermissions = isAdmin || hasPermission('admin'); // Admins or admin permission
   const canAccessAudit = hasPermission('view_audit_logs');
+  const canAccessIntegrations = isAdmin || hasPermission('admin'); // Admins or admin permission
   const canAccessInstance = isAdmin || hasPermission('admin'); // Admins or admin permission
 
   const availableSections = Object.entries(SECTIONS).filter(([key]) => {
@@ -192,6 +204,7 @@ const Settings: pageWithLayout<Props> = ({ roles, departments, grouproles, isAdm
     if (key === 'api') return canAccessApi;
     if (key === 'permissions') return canAccessPermissions;
     if (key === 'audit') return canAccessAudit;
+    if (key === 'integrations') return canAccessIntegrations;
     if (key === 'instance') return canAccessInstance;
     return false;
   });

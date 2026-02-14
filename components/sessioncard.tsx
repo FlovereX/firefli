@@ -679,7 +679,13 @@ const SessionModal: React.FC<SessionModalProps> = ({
                                 </>
                               )}
                             </Listbox.Option>
-                            {availableTags.map((tag) => (
+                            {availableTags
+                              .filter(
+                                (tag) =>
+                                  !tag.allowedTypes?.length ||
+                                  tag.allowedTypes.includes(session.type || "other")
+                              )
+                              .map((tag) => (
                               <Listbox.Option
                                 key={tag.id}
                                 value={tag.id}

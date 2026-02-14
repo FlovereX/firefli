@@ -27,7 +27,7 @@ export async function getCachedAvatar(userId: number): Promise<string> {
   return avatarUrl;
 }
 
-async function getRemoteAvatarUrl(userId: number): Promise<string> {
+export async function getRemoteAvatarUrl(userId: number): Promise<string> {
   const thumbnails = await noblox.getPlayerThumbnail([userId], 180, "png", false, "headshot");
   if (thumbnails && thumbnails[0] && thumbnails[0].imageUrl) {
     return thumbnails[0].imageUrl;

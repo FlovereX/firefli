@@ -12,6 +12,7 @@ import {
   IconX,
   IconPencil,
   IconChevronDown,
+  IconRefresh,
 } from "@tabler/icons-react";
 import axios from "axios";
 import { useRouter } from "next/router";
@@ -146,6 +147,7 @@ export function InformationTab({
   const [birthdayMonth, setBirthdayMonth] = useState(user.birthdayMonth || "");
   const [discordId, setDiscordId] = useState(workspaceMember?.discordId || "");
   const [loading, setLoading] = useState(false);
+  const [pullingDiscord, setPullingDiscord] = useState(false);
   const [localTime, setLocalTime] = useState("");
   const [isNight, setIsNight] = useState(false);
   const [managerQuery, setManagerQuery] = useState("");
@@ -210,6 +212,26 @@ export function InformationTab({
     setBirthdayMonth(user.birthdayMonth || "");
     setDiscordId(workspaceMember?.discordId || "");
     setEditing(false);
+  };
+
+  const pullDiscordFromBloxlink = async () => {
+    setPullingDiscord(true);
+    try {
+      const res = await axios.post(
+        `/api/workspace/${workspaceId}/settings/bloxlink/lookup`,
+        { robloxUserId: user.userid }
+      );
+      if (res.data.success && res.data.discordId) {
+        setDiscordId(res.data.discordId);
+        toast.success("Discord ID pulled from Bloxlink!");
+      } else {
+        toast.error(res.data.error || "No linked Discord account found");
+      }
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || "Failed to pull from Bloxlink");
+    } finally {
+      setPullingDiscord(false);
+    }
   };
 
   return (
@@ -290,13 +312,25 @@ export function InformationTab({
                   Discord ID
                 </p>
                 {editing ? (
-                  <input
-                    type="text"
-                    value={discordId}
-                    onChange={(e) => setDiscordId(e.target.value)}
-                    placeholder="Enter Discord ID"
-                    className="w-full px-2 py-1 text-sm rounded-lg bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff0099]/50"
-                  />
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      value={discordId}
+                      onChange={(e) => setDiscordId(e.target.value)}
+                      placeholder="Enter Discord ID"
+                      className="flex-1 px-2 py-1 text-sm rounded-lg bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#ff0099]/50"
+                    />
+                    <button
+                      type="button"
+                      onClick={pullDiscordFromBloxlink}
+                      disabled={pullingDiscord}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 disabled:opacity-50 transition-colors whitespace-nowrap"
+                      title="Pull Discord ID from Bloxlink"
+                    >
+                      <IconRefresh className={`w-3 h-3 ${pullingDiscord ? 'animate-spin' : ''}`} />
+                      Bloxlink
+                    </button>
+                  </div>
                 ) : (
                   <p className="text-sm font-semibold text-zinc-900 dark:text-white">
                     {workspaceMember?.discordId || "Not linked"}

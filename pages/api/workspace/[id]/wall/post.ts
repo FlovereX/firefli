@@ -4,6 +4,7 @@ import { fetchworkspace, getConfig, setConfig } from "@/utils/configEngine";
 import prisma from "@/utils/database";
 import { withPermissionCheck } from "@/utils/permissionsManager";
 import { withSessionRoute } from "@/lib/withSession";
+import { logAudit } from "@/utils/logs";
 import {
   getUsername,
   getThumbnail,
@@ -196,6 +197,18 @@ export async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
         },
       },
     });
+
+    // Log audit event for wall post creation
+    logAudit(
+      parseInt(req.query.id as string),
+      req.session.userid,
+      'wall.post.create',
+      'wall',
+      {
+        content: content.length > 100 ? content.substring(0, 100) + '...' : content,
+        hasImage: !!image,
+      }
+    ).catch(() => {});
 
     return res.status(200).json({
       success: true,

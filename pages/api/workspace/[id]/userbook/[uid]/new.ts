@@ -6,6 +6,7 @@ import { logAudit } from "@/utils/logs";
 import { withSessionRoute } from "@/lib/withSession";
 import { withPermissionCheck } from "@/utils/permissionsManager";
 import { RankGunAPI, getRankGun } from "@/utils/rankgun";
+import { sendBloxlinkNotification } from "@/utils/bloxlink-notification";
 
 import {
   getUsername,
@@ -71,7 +72,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
     return res
       .status(405)
       .json({ success: false, error: "Method not allowed" });
-  const { type, notes, targetRank } = req.body;
+  const { type, notes, targetRank, notifyDiscord, terminationAction, banDeleteDays } = req.body;
   if (!type || !notes)
     return res
       .status(400)
@@ -354,6 +355,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
                 type,
                 userId,
                 adminId: req.session.userid,
+                reason: notes,
                 rankBefore,
                 rankAfter: 1,
                 rankNameBefore,
@@ -361,6 +363,26 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
               }
             );
           } catch (e) {}
+
+          // Send Bloxlink DM notification if requested and Bloxlink is configured
+          if (notifyDiscord) {
+            const bloxlinkIntegration = await prisma.bloxlinkIntegration.findUnique({
+              where: { workspaceGroupId },
+            }).catch(() => null);
+
+            if (bloxlinkIntegration?.isActive) {
+              sendBloxlinkNotification(workspaceGroupId, userId, 'termination', {
+                reason: notes,
+                issuedBy: String(req.session.userid),
+                rankBefore,
+                rankAfter: 1,
+                rankNameBefore,
+                rankNameAfter,
+                terminationAction: terminationAction || 'none',
+                banDeleteDays: banDeleteDays || 0,
+              }).catch((e) => console.error('[Bloxlink] Failed to send termination notification:', e));
+            }
+          }
 
           return res.status(200).json({
             success: true,
@@ -507,6 +529,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
         type,
         userId: uid,
         adminId: req.session.userid,
+        reason: notes,
         rankBefore,
         rankAfter,
         rankNameBefore,
@@ -514,6 +537,25 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
       }
     );
   } catch (e) {}
+
+  // Send Bloxlink DM notification if requested and Bloxlink is configured
+  if (notifyDiscord && (type === 'promotion' || type === 'demotion' || type === 'warning')) {
+    const bloxlinkIntegration = await prisma.bloxlinkIntegration.findUnique({
+      where: { workspaceGroupId: parseInt(id as string) },
+    }).catch(() => null);
+
+    if (bloxlinkIntegration?.isActive) {
+      sendBloxlinkNotification(parseInt(id as string), userId, type, {
+        reason: notes,
+        issuedBy: String(req.session.userid),
+        newRole: rankNameAfter || undefined,
+        rankBefore,
+        rankAfter,
+        rankNameBefore,
+        rankNameAfter,
+      }).catch((e) => console.error('[Bloxlink] Failed to send notification:', e));
+    }
+  }
 
   res.status(200).json({
     success: true,

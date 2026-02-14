@@ -47,6 +47,12 @@ const Book: FC<Props> = ({ userBook, onRefetch, logbookPermissions }) => {
   >([]);
   const [loadingRanks, setLoadingRanks] = useState(false);
   const [localBook, setLocalBook] = useState<any[]>(userBook || []);
+  const [notifyDiscord, setNotifyDiscord] = useState(false);
+  const [bloxlinkEnabled, setBloxlinkEnabled] = useState(false);
+  const [discordEnabled, setDiscordEnabled] = useState(false);
+  const [kickFromDiscord, setKickFromDiscord] = useState(false);
+  const [banFromDiscord, setBanFromDiscord] = useState(false);
+  const [banDeleteDays, setBanDeleteDays] = useState(0);
 
   useEffect(() => {
     setLocalBook(userBook || []);
@@ -79,12 +85,40 @@ const Book: FC<Props> = ({ userBook, onRefetch, logbookPermissions }) => {
       }
     };
 
+    const checkBloxlinkStatus = async () => {
+      try {
+        const response = await axios.get(
+          `/api/workspace/${id}/settings/bloxlink/status`
+        );
+        if (response.data.success && response.data.integration?.isActive) {
+          setBloxlinkEnabled(true);
+        }
+      } catch (error) {
+        // Bloxlink not configured, ignore
+      }
+    };
+
+    const checkDiscordStatus = async () => {
+      try {
+        const response = await axios.get(
+          `/api/workspace/${id}/settings/discord/status`
+        );
+        if (response.data.success && response.data.integration?.isActive) {
+          setDiscordEnabled(true);
+        }
+      } catch (error) {
+        // Discord not configured, ignore
+      }
+    };
+
     if (id) {
       checkRankGunStatus().then((enabled) => {
         if (enabled) {
           fetchRanks();
         }
       });
+      checkBloxlinkStatus();
+      checkDiscordStatus();
     }
   }, [id]);
 
@@ -110,6 +144,9 @@ const Book: FC<Props> = ({ userBook, onRefetch, logbookPermissions }) => {
       const payload: any = {
         notes: text,
         type: type,
+        notifyDiscord: bloxlinkEnabled && discordEnabled && notifyDiscord,
+        terminationAction: type === 'termination' && kickFromDiscord ? 'kick' : type === 'termination' && banFromDiscord ? 'ban' : 'none',
+        banDeleteDays: banDeleteDays,
       };
 
       if (type === "rank_change") {
@@ -416,6 +453,90 @@ const Book: FC<Props> = ({ userBook, onRefetch, logbookPermissions }) => {
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                   Select the rank that the user should be set to.
                 </p>
+              </div>
+            )}
+
+            {/* Discord Notification Checkbox - requires both Bloxlink and Discord */}
+            {bloxlinkEnabled && discordEnabled && (type === "warning" || type === "promotion" || type === "demotion" || type === "termination") && (
+              <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 p-4 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <input
+                    id="notify-discord"
+                    type="checkbox"
+                    checked={notifyDiscord}
+                    onChange={(e) => setNotifyDiscord(e.target.checked)}
+                    className="mt-1 w-4 h-4 text-blue-600 bg-white border-blue-300 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                  <div className="flex-1">
+                    <label htmlFor="notify-discord" className="text-sm font-medium text-blue-800 dark:text-blue-200 cursor-pointer">
+                      Notify user via Discord DM
+                    </label>
+                    <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                      Send a direct message to the user on Discord about this {type === "warning" ? "warning" : type}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Termination Actions - only show for termination type when Discord notification is enabled */}
+                {type === "termination" && notifyDiscord && bloxlinkEnabled && (
+                  <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+                    <h4 className="text-sm font-medium text-red-800 dark:text-red-200 mb-3">
+                      Discord Server Actions
+                    </h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <input
+                          id="kick-discord"
+                          type="checkbox"
+                          checked={kickFromDiscord}
+                          onChange={(e) => {
+                            setKickFromDiscord(e.target.checked);
+                            if (e.target.checked) setBanFromDiscord(false);
+                          }}
+                          className="w-4 h-4 text-red-600 bg-white border-red-300 rounded focus:ring-red-500 focus:ring-2"
+                        />
+                        <label htmlFor="kick-discord" className="text-sm text-red-700 dark:text-red-300 cursor-pointer">
+                          Kick from Discord server
+                        </label>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <input
+                          id="ban-discord"
+                          type="checkbox"
+                          checked={banFromDiscord}
+                          onChange={(e) => {
+                            setBanFromDiscord(e.target.checked);
+                            if (e.target.checked) setKickFromDiscord(false);
+                          }}
+                          className="mt-1 w-4 h-4 text-red-600 bg-white border-red-300 rounded focus:ring-red-500 focus:ring-2"
+                        />
+                        <div className="flex-1">
+                          <label htmlFor="ban-discord" className="text-sm text-red-700 dark:text-red-300 cursor-pointer">
+                            Ban from Discord server
+                          </label>
+                          {banFromDiscord && (
+                            <div className="mt-2">
+                              <label className="block text-xs text-red-600 dark:text-red-400 mb-1">
+                                Delete message history:
+                              </label>
+                              <select
+                                value={banDeleteDays}
+                                onChange={(e) => setBanDeleteDays(parseInt(e.target.value))}
+                                className="text-xs px-2 py-1 border border-red-200 dark:border-red-600 rounded bg-white dark:bg-zinc-800 text-red-700 dark:text-red-300"
+                              >
+                                <option value={0}>Don't delete messages</option>
+                                <option value={1}>1 day</option>
+                                <option value={2}>2 days</option>
+                                <option value={3}>3 days</option>
+                                <option value={7}>7 days</option>
+                              </select>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

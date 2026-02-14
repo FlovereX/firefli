@@ -8,6 +8,7 @@ type SessionTag = {
   id: string;
   name: string;
   color: string;
+  allowedTypes: string[];
   workspaceGroupId: number;
   createdAt: Date;
   updatedAt: Date;
@@ -78,7 +79,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
   }
 
   if (req.method === "POST") {
-    const { name, color } = req.body;
+    const { name, color, allowedTypes } = req.body;
 
     if (!name || !color) {
       return res
@@ -92,6 +93,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
           name: name.trim(),
           color: color.trim(),
           workspaceGroupId: workspaceId,
+          allowedTypes: allowedTypes || [],
         },
       });
 
@@ -123,9 +125,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
   }
 
   if (req.method === "PATCH") {
-    const { id, name, color } = req.body;
+    const { id, name, color, allowedTypes } = req.body;
 
-    if (!id || (!name && !color)) {
+    if (!id || (!name && !color && !allowedTypes)) {
       return res
         .status(400)
         .json({ success: false, error: "Tag ID and at least one field to update are required" });
@@ -135,6 +137,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
       const updateData: any = {};
       if (name) updateData.name = name.trim();
       if (color) updateData.color = color.trim();
+      if (allowedTypes !== undefined) {
+        updateData.allowedTypes = allowedTypes;
+      }
 
       const tag = await prisma.sessionTag.update({
         where: { id },

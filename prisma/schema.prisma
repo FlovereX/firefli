@@ -34,6 +34,8 @@ model workspace {
   wallposts           wallPost[]
   externalServices    workspaceExternalServices?
   members             workspaceMember[]
+  discordIntegration  DiscordIntegration?
+  bloxlinkIntegration BloxlinkIntegration?
 }
 
 model config {
@@ -223,17 +225,20 @@ model SessionType {
   schedule           schedule[]
   hostingDepartments department[] @relation("SessionTypeTodepartment")
   hostingRoles       role[]       @relation("SessionTypeTorole")
+  sessionTags        SessionTag[] @relation("SessionTagToSessionType")
 }
 
 model SessionTag {
-  id               String    @id @unique @default(uuid()) @db.Uuid
+  id               String        @id @unique @default(uuid()) @db.Uuid
   name             String
   color            String
   workspaceGroupId Int
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  allowedTypes     String[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
   sessions         Session[]
-  workspace        workspace @relation(fields: [workspaceGroupId], references: [groupId])
+  workspace        workspace     @relation(fields: [workspaceGroupId], references: [groupId])
+  sessionTypes     SessionType[] @relation("SessionTagToSessionType")
 
   @@index([workspaceGroupId])
 }
@@ -274,6 +279,9 @@ model Session {
   scheduleId       String?       @db.Uuid
   sessionTagId     String?       @db.Uuid
   duration         Int           @default(30)
+  discordMessageId   String?
+  discordChannelId   String?
+  lastDiscordStatus  String?
   archiveEndDate   DateTime?
   archiveStartDate DateTime?
   archived         Boolean?      @default(false)
@@ -611,4 +619,108 @@ model PolicyShareableLink {
   @@index([documentId])
   @@index([workspaceGroupId])
   @@index([createdById])
+}
+
+model DiscordIntegration {
+  id               String    @id @default(uuid()) @db.Uuid
+  workspaceGroupId Int       @unique
+  botToken         String
+  guildId          String
+  guildName        String?
+  channelId        String
+  channelName      String?
+  birthdayChannelId String?
+  birthdayChannelName String?
+  enabledEvents    Json      @default("[]")
+  birthdayEnabled  Boolean   @default(false)
+
+  embedTitle       String?
+  embedColor       String?
+  embedFooter      String?
+  embedThumbnail   Boolean   @default(true)
+
+  promotionEmbedTitle       String?
+  promotionEmbedColor       String?
+  promotionEmbedDescription String?
+  promotionEmbedFooter      String?
+
+  demotionEmbedTitle        String?
+  demotionEmbedColor        String?
+  demotionEmbedDescription  String?
+  demotionEmbedFooter       String?
+
+  warningEmbedTitle         String?
+  warningEmbedColor         String?
+  warningEmbedDescription   String?
+  warningEmbedFooter        String?
+
+  terminationEmbedTitle     String?
+  terminationEmbedColor     String?
+  terminationEmbedDescription String?
+  terminationEmbedFooter    String?
+
+  noticeSubmitEmbedTitle    String?
+  noticeSubmitEmbedColor    String?
+  noticeSubmitEmbedDescription String?
+  noticeSubmitEmbedFooter   String?
+  noticeApprovalEmbedTitle  String?
+  noticeApprovalEmbedColor  String?
+  noticeApprovalEmbedDescription String?
+  noticeApprovalEmbedFooter String?
+  noticeDenialEmbedTitle    String?
+  noticeDenialEmbedColor    String?
+  noticeDenialEmbedDescription String?
+  noticeDenialEmbedFooter   String?
+
+  birthdayEmbedTitle        String?
+  birthdayEmbedColor        String?
+  birthdayEmbedDescription  String?
+
+  sessionChannelId          String?
+  sessionChannelName        String?
+  sessionNotifyOnCreate     Boolean   @default(false)
+  sessionNotifyOnClaim      Boolean   @default(false)
+  sessionNotifyOnStart      Boolean   @default(false)
+  sessionEmbedTitle         String?
+  sessionEmbedColor         String?
+  sessionEmbedDescription   String?
+  sessionEmbedFooter        String?
+  sessionPingRoleId         String?
+  sessionPingRoleName       String?
+  pingRoles                 Json?
+
+  isActive         Boolean   @default(true)
+  lastMessageAt    DateTime?
+  errorCount       Int       @default(0)
+  lastError        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  workspace        workspace @relation(fields: [workspaceGroupId], references: [groupId], onDelete: Cascade)
+
+  @@index([workspaceGroupId])
+  @@index([guildId])
+  @@index([channelId])
+}
+
+model BloxlinkIntegration {
+  id                 String    @id @default(uuid()) @db.Uuid
+  workspaceGroupId   Int       @unique
+  apiKey             String
+  discordServerId    String
+  isActive           Boolean   @default(true)
+  notifyPromotion    Boolean   @default(true)
+  notifyDemotion     Boolean   @default(true)
+  notifyWarning      Boolean   @default(true)
+  messageTemplate    Json?
+  lastUsed           DateTime?
+  errorCount         Int       @default(0)
+  lastError          String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  workspace          workspace @relation(fields: [workspaceGroupId], references: [groupId], onDelete: Cascade)
+
+  @@index([workspaceGroupId])
+  @@index([discordServerId])
 }

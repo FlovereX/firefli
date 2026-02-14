@@ -1,6 +1,104 @@
 import prisma from './database';
+import DiscordAPI, { decryptToken, formatAuditEvent } from './discord';
+import { getRemoteAvatarUrl } from './avatarManager';
+import { getUsername } from './userinfoEngine';
 
 export type AuditDetails = Record<string, any>;
+
+async function sendToDiscord(workspaceGroupId: number, userId: number | null, action: string, details?: AuditDetails) {
+  try {
+    const integration = await prisma.discordIntegration.findUnique({
+      where: { workspaceGroupId },
+    });
+
+    if (!integration || !integration.isActive) return;
+
+    // Check if this event type is enabled
+    const enabledEvents = integration.enabledEvents as string[];
+    if (!enabledEvents.includes(action)) return;
+
+    // Get user info for the embed
+    let userName = 'System';
+    let avatarUrl: string | undefined;
+    if (userId) {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { userid: BigInt(userId) },
+          select: { username: true },
+        });
+        if (user?.username) {
+          userName = user.username;
+        } else {
+          try {
+            userName = await getUsername(userId) || 'Unknown';
+          } catch (e) {
+            userName = 'Unknown';
+          }
+        }
+        try {
+          avatarUrl = await getRemoteAvatarUrl(userId);
+        } catch (e) {
+          // Ignore thumbnail fetch errors
+        }
+      } catch (e) {
+        // Ignore user lookup errors
+      }
+    }
+
+    // Resolve target user's username for userbook actions
+    if (action === 'userbook.create' && details?.userId) {
+      try {
+        const targetUser = await prisma.user.findUnique({
+          where: { userid: BigInt(details.userId) },
+          select: { username: true },
+        });
+        if (targetUser?.username) {
+          details.targetUsername = targetUser.username;
+        } else {
+          const targetName = await getUsername(Number(details.userId));
+          if (targetName) details.targetUsername = targetName;
+        }
+      } catch (e) {
+        // Fall back to userId
+      }
+    }
+
+    const botToken = decryptToken(integration.botToken);
+    const discord = new DiscordAPI(botToken);
+
+    const message = formatAuditEvent(action, userName, details, avatarUrl, {
+      title: integration.embedTitle,
+      color: integration.embedColor,
+      footer: integration.embedFooter,
+      thumbnail: integration.embedThumbnail,
+    });
+
+    await discord.sendMessage(integration.channelId, message);
+
+    // Update last message timestamp
+    await prisma.discordIntegration.update({
+      where: { workspaceGroupId },
+      data: {
+        lastMessageAt: new Date(),
+        errorCount: 0,
+        lastError: null,
+      },
+    });
+  } catch (error: any) {
+    console.error('[Discord] Failed to send audit event:', error);
+    try {
+      await prisma.discordIntegration.update({
+        where: { workspaceGroupId },
+        data: {
+          errorCount: { increment: 1 },
+          lastError: error.message || 'Unknown error',
+        },
+      });
+    } catch (e) {
+      // Ignore update errors
+    }
+  }
+}
 
 export async function logAudit(workspaceGroupId: number, userId: number | null, action: string, entity?: string, details?: AuditDetails) {
   try {
@@ -23,6 +121,9 @@ export async function logAudit(workspaceGroupId: number, userId: number | null, 
           createdAt: { lt: cutoff },
         },
       });
+
+      // Send to Discord after logging
+      sendToDiscord(workspaceGroupId, userId, action, details).catch(() => {});
       return;
     }
 
@@ -34,6 +135,9 @@ export async function logAudit(workspaceGroupId: number, userId: number | null, 
     const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     await prisma.$executeRaw`
       DELETE FROM "AuditLog" WHERE "workspaceGroupId" = ${workspaceGroupId} AND "createdAt" < ${cutoff}`;
+
+    // Send to Discord after logging
+    sendToDiscord(workspaceGroupId, userId, action, details).catch(() => {});
   } catch (e) {
     console.error('[Audit] Failed to log audit', e);
   }
@@ -92,17 +196,22 @@ export async function queryAudit(workspaceGroupId: number, opts: { userId?: numb
     }
 
     const whereSql = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
-    const take = opts.take || 50;
-    const skip = opts.skip || 0;
+    const take = Math.max(1, Math.min(Number(opts.take) || 50, 200));
+    const skip = Math.max(0, Number(opts.skip) || 0);
+
+    params.push(take);
+    const limitIdx = idx++;
+    params.push(skip);
+    const offsetIdx = idx++;
 
     const rows: any[] = await prisma.$queryRawUnsafe(
-      `SELECT * FROM "AuditLog" ${whereSql} ORDER BY "createdAt" DESC LIMIT ${take} OFFSET ${skip}`,
+      `SELECT * FROM "AuditLog" ${whereSql} ORDER BY "createdAt" DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
       ...params
     );
 
     const countRes: any = await prisma.$queryRawUnsafe(
       `SELECT COUNT(*)::int AS cnt FROM "AuditLog" ${whereSql}`,
-      ...params
+      ...params.slice(0, -2)
     );
     const total = Array.isArray(countRes) && countRes[0] ? Number(countRes[0].cnt || countRes[0].count || 0) : 0;
 
