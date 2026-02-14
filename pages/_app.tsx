@@ -184,7 +184,7 @@ function MyApp({ Component, pageProps }: AppPropsWithLayout) {
     return (
       <>
         <Head>
-          <title>Firefli — Instance Error</title>
+          <title>Firefli - Instance Error</title>
         </Head>
         <InstanceError missing={instanceError} />
       </>
