@@ -28,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!/^[0-9]+$/.test(userid)) return res.status(400).end('Invalid userId');
   const userIdNum = Number(userid);
   if (!Number.isInteger(userIdNum) || userIdNum <= 0) return res.status(400).end('Invalid userId');
-  if (userIdNum > 10_000_000_000) return res.status(400).end('Invalid userId');
+  if (userIdNum > 100_000_000_000) return res.status(400).end('Invalid userId');
   const avatarDir = path.join(process.cwd(), 'public', 'avatars');
   const avatarPath = path.join(avatarDir, `${userIdNum}.png`);
   const resolved = path.resolve(avatarPath);
