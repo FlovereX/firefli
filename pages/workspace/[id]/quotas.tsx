@@ -873,86 +873,14 @@ const Quotas: pageWithLayout<pageProps> = ({
                                   "{quota.completionNotes}"
                                 </p>
                               )}
-                              {(quota.completionType === "user_complete" || (quota.completionType === "manager_signoff" && canSignoffQuotas)) && (
-                                <button
-                                  onClick={() => {
-                                    const promise = axios.post(
-                                      `/api/workspace/${id}/activity/quotas/${quota.id}/uncomplete`,
-                                      { targetUserId: login.userId }
-                                    ).then(() => {
-                                      setMyQuotas(myQuotas.map((q: any) => 
-                                        q.id === quota.id 
-                                          ? { ...q, completed: false, completedAt: null, completedBy: null, completedByUser: null, completionNotes: null, percentage: 0 }
-                                          : q
-                                      ));
-                                    });
-                                    toast.promise(promise, {
-                                      loading: "Marking as incomplete...",
-                                      success: "Quota marked as incomplete!",
-                                      error: "Failed to mark as incomplete"
-                                    });
-                                  }}
-                                  className="text-xs text-zinc-600 dark:text-zinc-400 hover:text-primary transition-colors"
-                                >
-                                  Mark as incomplete
-                                </button>
-                              )}
                             </div>
                           ) : (
-                            <div>
-                              {quota.completionType === "user_complete" ? (
-                                <button
-                                  onClick={() => {
-                                    const promise = axios.post(
-                                      `/api/workspace/${id}/activity/quotas/${quota.id}/complete`,
-                                      { targetUserId: login.userId }
-                                    ).then(() => {
-                                      setMyQuotas(myQuotas.map((q: any) => 
-                                        q.id === quota.id 
-                                          ? { ...q, completed: true, completedAt: new Date(), completedBy: login.userId, percentage: 100 }
-                                          : q
-                                      ));
-                                    });
-                                    toast.promise(promise, {
-                                      loading: "Marking as complete...",
-                                      success: "Quota completed!",
-                                      error: "Failed to complete quota"
-                                    });
-                                  }}
-                                  className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-                                >
-                                  <IconCheck className="w-4 h-4" />
-                                  Mark as Complete
-                                </button>
-                              ) : canSignoffQuotas ? (
-                                <button
-                                  onClick={() => {
-                                    const promise = axios.post(
-                                      `/api/workspace/${id}/activity/quotas/${quota.id}/signoff`,
-                                      { targetUserId: login.userId }
-                                    ).then(() => {
-                                      setMyQuotas(myQuotas.map((q: any) => 
-                                        q.id === quota.id 
-                                          ? { ...q, completed: true, completedAt: new Date(), completedBy: login.userId, percentage: 100 }
-                                          : q
-                                      ));
-                                    });
-                                    toast.promise(promise, {
-                                      loading: "Signing off quota...",
-                                      success: "Quota signed off!",
-                                      error: "Failed to sign off quota"
-                                    });
-                                  }}
-                                  className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-                                >
-                                  <IconCheck className="w-4 h-4" />
-                                  Manager Signoff
-                                </button>
-                              ) : (
-                                <div className="text-center py-2 text-xs text-zinc-500 dark:text-zinc-400 italic">
-                                  Requires manager signoff
-                                </div>
-                              )}
+                            <div className="text-center py-3 px-4 bg-zinc-50 dark:bg-zinc-700/50 rounded-lg">
+                              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                                {quota.completionType === "user_complete" 
+                                  ? "Not completed - can be self-completed on your profile" 
+                                  : "Not completed - requires manager signoff on your profile"}
+                              </p>
                             </div>
                           )}
                         </div>

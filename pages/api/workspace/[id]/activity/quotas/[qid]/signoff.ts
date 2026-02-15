@@ -117,10 +117,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
 
     const completion = await (prisma as any).userQuotaCompletion.upsert({
       where: {
-        quotaId_userId_workspaceGroupId: {
+        quotaId_userId_workspaceGroupId_archived: {
           quotaId,
           userId: targetUser,
           workspaceGroupId: workspaceId,
+          archived: false,
         },
       },
       create: {

@@ -108,6 +108,13 @@ export const getServerSideProps = withPermissionCheckSsr(
       ) ??
         false);
 
+    const canSignoffQuotas =
+      isAdmin ||
+      (currentUser?.roles?.some((role) =>
+        role.permissions?.includes("signoff_custom_quotas")
+      ) ??
+        false);
+
     const logbookPermissions = {
       view: isAdmin || (currentUser?.roles?.some((role) => role.permissions?.includes("view_logbook")) ?? false),
       rank: isAdmin || (currentUser?.roles?.some((role) => role.permissions?.includes("rank_users")) ?? false),
@@ -264,7 +271,46 @@ export const getServerSideProps = withPermissionCheckSsr(
         quotaMap.set(quota.id, quota);
       }
     });
-    const quotas = Array.from(quotaMap.values());
+    let quotasArray = Array.from(quotaMap.values());
+    const quotaIds = quotasArray.map(q => q.id);
+    const customQuotaCompletions = quotaIds.length > 0 ? await (prisma as any).userQuotaCompletion.findMany({
+      where: {
+        quotaId: { in: quotaIds },
+        userId: BigInt(query.uid as string),
+        workspaceGroupId: parseInt(query.id as string),
+        archived: { not: true },
+        OR: [
+          { completedAt: null },
+          { completedAt: { gte: startDate } },
+        ],
+      },
+      include: {
+        completedByUser: {
+          select: {
+            userid: true,
+            username: true,
+          },
+        },
+      },
+    }) : [];
+
+    const quotas = quotasArray.map((quota: any) => {
+      const completion = customQuotaCompletions.find((c: any) => c.quotaId === quota.id);
+      if (quota.type === "custom" && completion) {
+        return {
+          ...quota,
+          completed: completion.completed || false,
+          completedAt: completion.completedAt,
+          completedBy: completion.completedBy ? completion.completedBy.toString() : null,
+          completedByUser: completion.completedByUser ? {
+            userid: completion.completedByUser.userid.toString(),
+            username: completion.completedByUser.username,
+          } : null,
+          completionNotes: completion.notes,
+        };
+      }
+      return quota;
+    });
 
     const noticesConfig = await prisma.config.findFirst({
       where: {
@@ -690,7 +736,11 @@ export const getServerSideProps = withPermissionCheckSsr(
         sessionsHosted: sessionsHosted,
         sessionsAttended: sessionsAttended,
         allianceVisits: allianceVisits,
-        quotas,
+        quotas: JSON.parse(
+          JSON.stringify(quotas, (_k, v) =>
+            typeof v === "bigint" ? v.toString() : v
+          )
+        ),
         userBook: JSON.parse(
           JSON.stringify(ubook, (_k, v) =>
             typeof v === "bigint" ? v.toString() : v
@@ -730,6 +780,7 @@ export const getServerSideProps = withPermissionCheckSsr(
         canApproveNotices: hasApproveNoticesPermission,
         canRecordNotices: hasRecordNoticesPermission,
         canAdjustActivity: hasActivityAdjustmentsPermission,
+        canSignoffQuotas,
         logbookEnabled: hasAnyLogbookPermission,
         logbookPermissions,
       },
@@ -802,6 +853,7 @@ type pageProps = {
   canApproveNotices: boolean;
   canRecordNotices: boolean;
   canAdjustActivity: boolean;
+  canSignoffQuotas: boolean;
   logbookEnabled: boolean;
   logbookPermissions: {
     view: boolean;
@@ -842,6 +894,7 @@ const Profile: pageWithLayout<pageProps> = ({
   canApproveNotices,
   canRecordNotices,
   canAdjustActivity,
+  canSignoffQuotas,
   logbookEnabled,
   logbookPermissions,
 }) => {
@@ -887,11 +940,18 @@ const Profile: pageWithLayout<pageProps> = ({
         );
         if (response.data.success && response.data.data.history) {
           const validHistory = response.data.data.history.filter(
-            (h: any) =>
-              h.activity.minutes > 0 ||
-              h.activity.messages > 0 ||
-              h.activity.sessionsHosted > 0 ||
-              h.activity.sessionsAttended > 0
+            (h: any) => {
+              const hasActivity = 
+                h.activity.minutes > 0 ||
+                h.activity.messages > 0 ||
+                h.activity.sessionsHosted > 0 ||
+                h.activity.sessionsAttended > 0;
+              
+              const hasQuotas = h.activity.quotaProgress && 
+                Object.keys(h.activity.quotaProgress).length > 0;
+              
+              return hasActivity || hasQuotas;
+            }
           );
           setAvailableHistory(validHistory);
         } else {
@@ -985,6 +1045,7 @@ const Profile: pageWithLayout<pageProps> = ({
                   sessionRole: null,
                   currentValue: qp.value || 0,
                   percentage: qp.percentage || 0,
+                  completed: qp.completed || false,
                 })
               )
             : [],
@@ -1256,6 +1317,9 @@ const Profile: pageWithLayout<pageProps> = ({
                   goToPreviousWeek={goToPreviousWeek}
                   goToNextWeek={goToNextWeek}
                   canAdjustActivity={canAdjustActivity}
+                  canSignoffQuotas={canSignoffQuotas}
+                  targetUserId={user.userid}
+                  isViewingOwnProfile={isUser}
                 />
               </Tab.Panel>
               {logbookEnabled && (

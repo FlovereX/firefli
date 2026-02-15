@@ -66,6 +66,9 @@ type Props = {
   goToPreviousWeek?: () => void;
   goToNextWeek?: () => void;
   canAdjustActivity?: boolean;
+  canSignoffQuotas?: boolean;
+  targetUserId?: string;
+  isViewingOwnProfile?: boolean;
 };
 
 type TimelineItem =
@@ -109,6 +112,9 @@ const Activity: FC<Props> = ({
   goToPreviousWeek,
   goToNextWeek,
   canAdjustActivity = false,
+  canSignoffQuotas = false,
+  targetUserId,
+  isViewingOwnProfile = false,
 }) => {
   const router = useRouter();
   const { id } = router.query;
@@ -357,6 +363,11 @@ const Activity: FC<Props> = ({
                   sessionsHosted={sessionsHosted}
                   sessionsAttended={sessionsAttended}
                   allianceVisits={allianceVisits}
+                  canSignoffQuotas={canSignoffQuotas}
+                  targetUserId={targetUserId}
+                  isViewingOwnProfile={isViewingOwnProfile}
+                  workspaceId={id as string}
+                  isHistorical={isHistorical}
                 />
               </Tab.Panel>
             </Tab.Panels>

@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import type { Quota } from "@prisma/client";
 import { IconChartBar, IconUsers, IconBriefcase, IconCheck } from "@tabler/icons-react";
 import Tooltip from "@/components/tooltip";
+import axios from "axios";
+import toast, { Toaster } from "react-hot-toast";
 
 type QuotaWithLinkage = Quota & {
   currentValue?: number;
@@ -21,6 +23,11 @@ type Props = {
   sessionsHosted: number;
   sessionsAttended: number;
   allianceVisits: number;
+  canSignoffQuotas?: boolean;
+  targetUserId?: string;
+  isViewingOwnProfile?: boolean;
+  workspaceId?: string;
+  isHistorical?: boolean;
 };
 
 export function QuotasProgress({
@@ -29,7 +36,18 @@ export function QuotasProgress({
   sessionsHosted,
   sessionsAttended,
   allianceVisits,
+  canSignoffQuotas = false,
+  targetUserId,
+  isViewingOwnProfile = false,
+  workspaceId,
+  isHistorical = false,
 }: Props) {
+  const [localQuotas, setLocalQuotas] = useState(quotas);
+
+  // Update local quotas when prop changes
+  React.useEffect(() => {
+    setLocalQuotas(quotas);
+  }, [quotas]);
   const getQuotaPercentage = (quota: Quota | any) => {
     if (!quota || !quota.value) {
       return 0;
@@ -96,7 +114,7 @@ export function QuotasProgress({
     }
   };
 
-  if (quotas.length === 0) {
+  if (localQuotas.length === 0) {
     return (
       <div className="text-center py-10">
         <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-xl p-8 max-w-md mx-auto">
@@ -130,8 +148,9 @@ export function QuotasProgress({
         </div>
       </div>
       <div className="p-4 md:p-6">
+        <Toaster position="bottom-center" />
         <div className="grid gap-4">
-          {quotas.map((quota: QuotaWithLinkage) => (
+          {localQuotas.map((quota: QuotaWithLinkage) => (
             <div
               key={quota.id}
               className="bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-4"
@@ -202,7 +221,7 @@ export function QuotasProgress({
               )}
               
               {quota.type === "custom" && quota.completed && (
-                <div className="mt-2 space-y-1">
+                <div className="mt-2 space-y-2">
                   {quota.completedAt && (
                     <p className="text-xs text-zinc-500 dark:text-zinc-400">
                       Completed on {new Date(quota.completedAt).toLocaleDateString()}
@@ -213,15 +232,106 @@ export function QuotasProgress({
                       Signed off by @{quota.completedByUser.username}
                     </p>
                   )}
+                  {!isHistorical && workspaceId && targetUserId && (
+                    (quota.completionType === "user_complete" && isViewingOwnProfile) ||
+                    (quota.completionType === "manager_signoff" && canSignoffQuotas)
+                  ) && (
+                    <button
+                      onClick={() => {
+                        const promise = axios.post(
+                          `/api/workspace/${workspaceId}/activity/quotas/${quota.id}/uncomplete`,
+                          { targetUserId }
+                        ).then(() => {
+                          setLocalQuotas(localQuotas.map((q: any) => 
+                            q.id === quota.id 
+                              ? { ...q, completed: false, completedAt: null, completedBy: null, completedByUser: null, completionNotes: null }
+                              : q
+                          ));
+                        });
+                        toast.promise(promise, {
+                          loading: "Marking as incomplete...",
+                          success: "Quota marked as incomplete!",
+                          error: "Failed to mark as incomplete"
+                        });
+                      }}
+                      className="text-xs text-zinc-600 dark:text-zinc-400 hover:text-primary transition-colors"
+                    >
+                      Mark as incomplete
+                    </button>
+                  )}
                 </div>
               )}
               
-              {quota.type === "custom" && !quota.completed && quota.completionType && (
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2 italic">
-                  {quota.completionType === "user_complete" 
-                    ? "Can be self-completed" 
-                    : "Requires manager signoff"}
-                </p>
+              {quota.type === "custom" && !quota.completed && (
+                <div className="mt-2">
+                  {!isHistorical && workspaceId && targetUserId ? (
+                    <>
+                      {quota.completionType === "user_complete" && isViewingOwnProfile ? (
+                        <button
+                          onClick={() => {
+                            const promise = axios.post(
+                              `/api/workspace/${workspaceId}/activity/quotas/${quota.id}/complete`,
+                              { targetUserId }
+                            ).then(() => {
+                              setLocalQuotas(localQuotas.map((q: any) => 
+                                q.id === quota.id 
+                                  ? { ...q, completed: true, completedAt: new Date(), percentage: 100 }
+                                  : q
+                              ));
+                            });
+                            toast.promise(promise, {
+                              loading: "Marking as complete...",
+                              success: "Quota completed!",
+                              error: "Failed to complete quota"
+                            });
+                          }}
+                          className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                        >
+                          <IconCheck className="w-4 h-4" />
+                          Mark as Complete
+                        </button>
+                      ) : quota.completionType === "manager_signoff" && canSignoffQuotas ? (
+                        <button
+                          onClick={() => {
+                            const promise = axios.post(
+                              `/api/workspace/${workspaceId}/activity/quotas/${quota.id}/signoff`,
+                              { targetUserId }
+                            ).then(() => {
+                              setLocalQuotas(localQuotas.map((q: any) => 
+                                q.id === quota.id 
+                                  ? { ...q, completed: true, completedAt: new Date(), percentage: 100 }
+                                  : q
+                              ));
+                            });
+                            toast.promise(promise, {
+                              loading: "Signing off quota...",
+                              success: "Quota signed off!",
+                              error: "Failed to sign off quota"
+                            });
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
+                        >
+                          <IconCheck className="w-3.5 h-3.5" />
+                          Manager Signoff
+                        </button>
+                      ) : (
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 italic">
+                          {quota.completionType === "user_complete" 
+                            ? "Can be self-completed on user's own profile" 
+                            : canSignoffQuotas 
+                              ? "Requires manager signoff" 
+                              : "Requires manager with signoff permission"}
+                        </p>
+                      )}
+                    </>
+                  ) : !isHistorical ? (
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 italic">
+                      {quota.completionType === "user_complete" 
+                        ? "Can be self-completed" 
+                        : "Requires manager signoff"}
+                    </p>
+                  ) : null}
+                </div>
               )}
             </div>
           ))}
