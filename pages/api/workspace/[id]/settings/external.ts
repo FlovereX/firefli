@@ -68,7 +68,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         });
         if (!existing?.robloxApiKey) {
           return res.status(400).json({
-            message: "Roblox Open Cloud ranking requires an API key. Configure one in the section below first.",
+            message: "Roblox Open Cloud ranking requires an API key.",
           });
         }
       }

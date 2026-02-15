@@ -308,7 +308,7 @@ const RolesManager: FC<Props> = ({ roles, setRoles, grouproles }) => {
     );
     toast.promise(res, {
       loading: "Checking roles...",
-      success: "Roles updated!",
+      success: "Role sync requested. This may take a minute or two.",
       error: "Error updating roles",
     });
   };

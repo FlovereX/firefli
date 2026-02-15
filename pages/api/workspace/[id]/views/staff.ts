@@ -543,6 +543,7 @@ export default withPermissionCheck(
             userId: Number(user.userid),
             picture: getThumbnail(user.userid),
             username: user.username,
+            displayName: user.displayName || user.username,
           },
           book: user.book,
           wallPosts: currentWallPosts,

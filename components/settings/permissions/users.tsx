@@ -1,4 +1,4 @@
-import React, { FC, Fragment, useMemo, useEffect } from "react";
+import React, { FC, Fragment, useMemo, useEffect, useCallback } from "react";
 import { Disclosure, Transition, Listbox, Dialog } from "@headlessui/react";
 import {
   IconCheck,
@@ -30,78 +30,114 @@ type form = {
   username: string;
 };
 
-const USERS_PER_PAGE = 25;
+const USERS_PER_PAGE = 20;
+
+interface RolePageData {
+  users: any[];
+  total: number;
+  totalPages: number;
+  page: number;
+  loading: boolean;
+}
 
 const Button: FC<Props> = (props) => {
   const [workspace, setWorkspace] = useRecoilState(workspacestate);
-  const [users, setUsers] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [roleCounts, setRoleCounts] = React.useState<Record<string, number>>({});
+  const [rolePages, setRolePages] = React.useState<Record<string, RolePageData>>({});
+  const [initialLoading, setInitialLoading] = React.useState(true);
   const [login, setLogin] = useRecoilState(loginState);
   const [showRemoveModal, setShowRemoveModal] = React.useState(false);
   const [userToRemove, setUserToRemove] = React.useState<number | null>(null);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [currentPages, setCurrentPages] = React.useState<Record<string, number>>({});
+  const [searchDebounce, setSearchDebounce] = React.useState("");
 
   const userForm = useForm<form>();
   const { roles } = props;
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get(`/api/workspace/${workspace.groupId}/settings/users`);
-        setUsers(response.data.users || []);
-      } catch (error) {
-        console.error('Failed to fetch users:', error);
-        const toast = (await import("react-hot-toast")).default;
-        toast.error('Failed to load users');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUsers();
-  }, [workspace.groupId]);
+    const timer = setTimeout(() => {
+      setSearchDebounce(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  const filteredUsers = useMemo(() => {
-    if (!searchQuery.trim()) return users;
-    const query = searchQuery.toLowerCase();
-    return users.filter(
-      (user: any) =>
-        user.username?.toLowerCase().includes(query) ||
-        user.displayName?.toLowerCase().includes(query)
-    );
-  }, [users, searchQuery]);
+  const fetchRoleCounts = useCallback(async () => {
+    try {
+      setInitialLoading(true);
+      const params = new URLSearchParams();
+      if (searchDebounce) params.set('search', searchDebounce);
+      const response = await axios.get(`/api/workspace/${workspace.groupId}/settings/users?${params.toString()}`);
+      setRoleCounts(response.data.roleCounts || {});
+      setRolePages({});
+    } catch (error) {
+      console.error('Failed to fetch role counts:', error);
+    } finally {
+      setInitialLoading(false);
+    }
+  }, [workspace.groupId, searchDebounce]);
 
-  const getPageForRole = (roleId: string) => currentPages[roleId] || 1;
-  
-  const setPageForRole = (roleId: string, page: number) => {
-    setCurrentPages((prev) => ({ ...prev, [roleId]: page }));
-  };
+  useEffect(() => {
+    fetchRoleCounts();
+  }, [fetchRoleCounts]);
 
-  const getUsersForRole = (roleId: string) => {
-    const roleUsers = filteredUsers.filter((user: any) => user.roles[0]?.id === roleId);
-    const page = getPageForRole(roleId);
-    const start = (page - 1) * USERS_PER_PAGE;
-    const end = start + USERS_PER_PAGE;
-    return {
-      users: roleUsers.slice(start, end),
-      total: roleUsers.length,
-      totalPages: Math.ceil(roleUsers.length / USERS_PER_PAGE),
-      currentPage: page,
-    };
-  };
+  const fetchRoleUsers = useCallback(async (roleId: string, page: number) => {
+    setRolePages(prev => ({
+      ...prev,
+      [roleId]: { ...(prev[roleId] || { users: [], total: 0, totalPages: 0, page: 1 }), loading: true },
+    }));
+
+    try {
+      const params = new URLSearchParams({
+        roleId,
+        page: String(page),
+        pageSize: String(USERS_PER_PAGE),
+      });
+      if (searchDebounce) params.set('search', searchDebounce);
+
+      const response = await axios.get(`/api/workspace/${workspace.groupId}/settings/users?${params.toString()}`);
+      setRolePages(prev => ({
+        ...prev,
+        [roleId]: {
+          users: response.data.users || [],
+          total: response.data.total || 0,
+          totalPages: response.data.totalPages || 0,
+          page,
+          loading: false,
+        },
+      }));
+    } catch (error) {
+      console.error(`Failed to fetch users for role ${roleId}:`, error);
+      setRolePages(prev => ({
+        ...prev,
+        [roleId]: { users: [], total: 0, totalPages: 0, page, loading: false },
+      }));
+    }
+  }, [workspace.groupId, searchDebounce]);
 
   const updateRole = async (id: number, roleid: string) => {
-    const userIndex = users.findIndex((user: any) => user.userid === id);
-    if (userIndex === -1) return;
-    const usi = users;
-    const role = roles.find((role: any) => role.id === roleid);
-    if (!role) return;
-    usi[userIndex].roles = [role];
-    setUsers([...usi]);
+    for (const [currentRoleId, pageData] of Object.entries(rolePages)) {
+      const userIndex = pageData.users.findIndex((u: any) => u.userid === id);
+      if (userIndex !== -1) {
+        const updatedUsers = pageData.users.filter((u: any) => u.userid !== id);
+        setRolePages(prev => ({
+          ...prev,
+          [currentRoleId]: { ...prev[currentRoleId], users: updatedUsers, total: prev[currentRoleId].total - 1 },
+        }));
+        setRoleCounts(prev => ({
+          ...prev,
+          [currentRoleId]: Math.max(0, (prev[currentRoleId] || 1) - 1),
+          [roleid]: (prev[roleid] || 0) + 1,
+        }));
+        if (rolePages[roleid]) {
+          fetchRoleUsers(roleid, rolePages[roleid].page);
+        }
+        break;
+      }
+    }
+
     await axios.post(
       `/api/workspace/${workspace.groupId}/settings/users/${id}/update`,
-      { role: role.id }
+      { role: roleid }
     );
   };
 
@@ -113,9 +149,23 @@ const Button: FC<Props> = (props) => {
       }
       return;
     }
-    const user = users.find((user: any) => user.userid === id);
-    if (!user) return;
-    setUsers(users.filter((user: any) => user.userid !== id));
+
+    for (const [roleId, pageData] of Object.entries(rolePages)) {
+      const userIndex = pageData.users.findIndex((u: any) => u.userid === id);
+      if (userIndex !== -1) {
+        const updatedUsers = pageData.users.filter((u: any) => u.userid !== id);
+        setRolePages(prev => ({
+          ...prev,
+          [roleId]: { ...prev[roleId], users: updatedUsers, total: prev[roleId].total - 1 },
+        }));
+        setRoleCounts(prev => ({
+          ...prev,
+          [roleId]: Math.max(0, (prev[roleId] || 1) - 1),
+        }));
+        break;
+      }
+    }
+
     await axios.delete(
       `/api/workspace/${workspace.groupId}/settings/users/${id}/remove`
     );
@@ -138,7 +188,11 @@ const Button: FC<Props> = (props) => {
       });
     if (!user) return;
     userForm.clearErrors();
-    setUsers([...users, user.data.user]);
+    fetchRoleCounts();
+    const newUserRoleId = user.data.user?.roles?.[0]?.id;
+    if (newUserRoleId && rolePages[newUserRoleId]) {
+      fetchRoleUsers(newUserRoleId, rolePages[newUserRoleId].page);
+    }
   };
 
   return (
@@ -186,25 +240,24 @@ const Button: FC<Props> = (props) => {
         </div>
         <input
           type="text"
-          placeholder="Search users by username or display name..."
+          placeholder="Search users by username..."
           value={searchQuery}
           onChange={(e) => {
             setSearchQuery(e.target.value);
-            setCurrentPages({});
           }}
-          disabled={loading}
+          disabled={initialLoading}
           className="w-full pl-10 pr-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-700 text-zinc-600 dark:text-white focus:ring-primary focus:border-primary transition focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
         />
       </div>
 
-      {loading ? (
+      {initialLoading ? (
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : (
         <div className="space-y-3">{roles.map((role) => {
-          const { users: roleUsers, total, totalPages, currentPage } = getUsersForRole(role.id);
-          const allRoleUsers = filteredUsers.filter((user: any) => user.roles[0]?.id === role.id);
+          const total = roleCounts[role.id] || 0;
+          const pageData = rolePages[role.id];
           
           return (
             <Disclosure
@@ -212,7 +265,17 @@ const Button: FC<Props> = (props) => {
               key={role.id}
               className="bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 shadow-sm"
             >
-              {({ open }) => (
+              {({ open }) => {
+                if (open && !pageData) {
+                  fetchRoleUsers(role.id, 1);
+                }
+
+                const roleUsers = pageData?.users || [];
+                const currentPage = pageData?.page || 1;
+                const totalPages = pageData?.totalPages || 0;
+                const isLoading = pageData?.loading ?? true;
+
+                return (
                 <>
                   <Disclosure.Button className="w-full px-4 py-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-lg">
                     <div className="flex items-center justify-between">
@@ -242,9 +305,13 @@ const Button: FC<Props> = (props) => {
                     leaveTo="transform scale-95 opacity-0"
                   >
                     <Disclosure.Panel className="px-4 pb-4">
-                      {total === 0 ? (
+                      {isLoading && open ? (
+                        <div className="flex justify-center items-center py-6">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                        </div>
+                      ) : total === 0 ? (
                         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                          {searchQuery ? "No users match your search" : "No users in this role"}
+                          {searchDebounce ? "No users match your search" : "No users in this role"}
                         </p>
                       ) : (
                         <div className="space-y-2">
@@ -360,13 +427,13 @@ const Button: FC<Props> = (props) => {
                           {totalPages > 1 && (
                             <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-zinc-700 mt-4">
                               <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                                Showing {((currentPage - 1) * USERS_PER_PAGE) + 1}-{Math.min(currentPage * USERS_PER_PAGE, total)} of {total} users
+                                Showing {((currentPage - 1) * USERS_PER_PAGE) + 1}-{Math.min(currentPage * USERS_PER_PAGE, pageData?.total || total)} of {pageData?.total || total} users
                               </p>
                               <div className="flex items-center space-x-2">
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setPageForRole(role.id, currentPage - 1);
+                                    fetchRoleUsers(role.id, currentPage - 1);
                                   }}
                                   disabled={currentPage === 1}
                                   className={clsx(
@@ -384,7 +451,7 @@ const Button: FC<Props> = (props) => {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setPageForRole(role.id, currentPage + 1);
+                                    fetchRoleUsers(role.id, currentPage + 1);
                                   }}
                                   disabled={currentPage === totalPages}
                                   className={clsx(
@@ -404,7 +471,8 @@ const Button: FC<Props> = (props) => {
                     </Disclosure.Panel>
                   </Transition>
                 </>
-              )}
+              );
+              }}
             </Disclosure>
           );
         })}
