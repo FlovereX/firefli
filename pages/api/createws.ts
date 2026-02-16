@@ -213,10 +213,9 @@ export async function handler(
 				description: `A new workspace has been created on Firefli!`,
 				color: 0x00ff88,
 				fields: [
-					{ name: '👤 Owner', value: ownerUsername, inline: true },
-					{ name: '🆔 Owner ID', value: String(req.session.userid), inline: true },
-					{ name: '🏢 Group ID', value: String(groupId), inline: true },
-					{ name: '📝 Workspace Name', value: groupName, inline: true },
+					{ name: 'Owner', value: ownerUsername, inline: true },
+					{ name: 'Workspace Name', value: groupName, inline: true },
+					{ name: 'Group ID', value: String(groupId), inline: true },
 				],
 				thumbnail: groupLogo ? { url: groupLogo } : undefined,
 				footer: { text: 'Firefli Workspace' },
