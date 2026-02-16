@@ -405,7 +405,7 @@ const Login: NextPage = () => {
 						</p>
 						<ul className="text-xs text-zinc-400 dark:text-zinc-400 list-disc list-inside space-y-1 mb-2">
 							<li><strong>Groups</strong> - <strong>group:read</strong> for rank changes.</li>
-							<li><strong>Users</strong> - <strong>user.social:read</strong> for rank changes.</li>
+							<li><strong>Users</strong> - <strong>user.social:read</strong> for username/displayname changes.</li>
 						</ul>
 						<div className="flex gap-2">
 							<input
