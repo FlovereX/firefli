@@ -46,6 +46,7 @@ next-env.d.ts
 
 Frame_5_3.png
 /public/avatars
+/scripts
 
 # build
 deploy.sh
