@@ -457,10 +457,7 @@ const Wall: pageWithLayout<pageProps> = (props) => {
                         src={post.image}
                         alt="Post image"
                         className="max-h-96 rounded-lg object-contain"
-                        onError={(e) => {
-                          e.currentTarget.src = "/placeholder-image-error.png";
-                          toast.error("Failed to load image");
-                        }}
+                        style={{ minHeight: '100px', backgroundColor: '#f0f0f0' }}
                       />
                     </div>
                   )}

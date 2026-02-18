@@ -126,11 +126,12 @@ export async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
       .json({ success: false, error: "Method not allowed" });
   if (!req.session.userid)
     return res.status(401).json({ success: false, error: "Not logged in" });
-  if (!req.body?.content)
+  if (!req.body?.content && !req.body?.image)
     return res.status(400).json({ success: false, error: "Missing content" });
 
   try {
     let { content, image } = req.body;
+    content = content || "";
 
     // Sanitize text content - strip all HTML tags
     content = sanitizeHtml(content.toString().trim(), {
@@ -225,3 +226,11 @@ export async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
       .json({ success: false, error: "Something went wrong" });
   }
 }
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '12mb',
+    },
+  },
+};

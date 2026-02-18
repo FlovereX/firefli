@@ -13,7 +13,7 @@ export default function proxy(request: NextRequest) {
       "script-src-attr 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com https://fonts.intercomcdn.com",
-      "img-src 'self' data:image/png data:image/jpeg data:image/gif data:image/svg+xml data:image/webp https: blob:",
+      "img-src 'self' data: https: blob:",
       "connect-src 'self' https://api.intercom.io https://events.posthog.com https://app.posthog.com https://eu.i.posthog.com https://eu-assets.i.posthog.com https://apis.roblox.com https://thumbnails.roblox.com https://users.roblox.com wss://*.intercom.io",
       "media-src 'self' https://audio-ssl.itunes.apple.com https://cdn.freesound.org",
       "frame-src 'self' https://widget.intercom.io https://www.youtube.com",
