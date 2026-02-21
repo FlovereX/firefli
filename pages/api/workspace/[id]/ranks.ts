@@ -32,7 +32,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
     }
 
     const roles = await noblox.getRoles(workspace.groupId);
-    const sortedRoles = roles.sort((a, b) => a.rank - b.rank);
+    const sortedRoles = roles.sort((a, b) => b.rank - a.rank);
     const ranks = sortedRoles
       .filter((role) => role.rank !== 0)
       .map((role) => ({
