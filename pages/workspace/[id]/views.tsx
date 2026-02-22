@@ -371,6 +371,11 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
           </p>
         );
       },
+      sortingFn: (rowA, rowB) => {
+        const rankA = rowA.original.rankID || 0;
+        const rankB = rowB.original.rankID || 0;
+        return rankA - rankB;
+      },
     }),
     columnHelper.accessor("hostedSessions", {
       header: "Hosted sessions",
