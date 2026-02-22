@@ -70,7 +70,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           userId: Number(visit.host.userid),
           username: visit.host.username,
           thumbnail: visit.host.picture,
-          profileUrl: `https://www.roblox.com/users/${visit.host.userid}/profile`,
         },
       })),
     }))
