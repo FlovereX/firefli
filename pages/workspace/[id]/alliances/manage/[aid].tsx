@@ -2,7 +2,6 @@ import workspace from "@/layouts/workspace";
 import { pageWithLayout } from "@/layoutTypes";
 import { loginState } from "@/state";
 import axios from "axios";
-import Link from "next/link";
 import { useRouter } from "next/router";
 import { getConfig } from "@/utils/configEngine";
 import { useState, Fragment, useMemo, useRef, useEffect } from "react";
@@ -836,7 +835,7 @@ const ManageAlly: pageWithLayout<pageProps> = (props) => {
                         orientation="top"
                         tooltipText={rep.username}
                       >
-                        <Link href={`/workspace/${id}/profile/${rep.userid}`}>
+                        <a href={`https://www.roblox.com/users/${rep.userid}/profile`} target="_blank" rel="noopener noreferrer">
                           <div
                             className={`w-8 h-8 p-0.5 rounded-full flex items-center justify-center ${getRandomBg(
                               rep.userid
@@ -856,7 +855,7 @@ const ManageAlly: pageWithLayout<pageProps> = (props) => {
                               style={{ background: "transparent" }}
                             />
                           </div>
-                        </Link>
+                        </a>
                       </Tooltip>
                     ))}
                   </div>
@@ -1029,9 +1028,9 @@ const ManageAlly: pageWithLayout<pageProps> = (props) => {
                           key={`rep-${index}`}
                           className="text-sm text-zinc-700 dark:text-zinc-300"
                         >
-                          • <Link href={`/workspace/${id}/profile/${rep.userid}`} className="text-primary hover:text-primary/80 underline">
+                          • <a href={`https://www.roblox.com/users/${rep.userid}/profile`} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 underline">
                             {rep.username}
-                          </Link>
+                          </a>
                           {(props as any).missingReps?.some(
                             (m: any) => Number(m.userid) === Number(rep.userid)
                           ) && (

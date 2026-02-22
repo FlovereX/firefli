@@ -60,7 +60,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         userId: Number(rep.userid),
         username: rep.username,
         thumbnail: rep.picture,
-        profileUrl: `/workspace/${workspaceId}/profile/${rep.userid}`,
+        profileUrl: `https://www.roblox.com/users/${rep.userid}/profile`,
       })),
       recentVisits: ally.allyVisits.map((visit) => ({
         id: visit.id,
@@ -70,7 +70,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           userId: Number(visit.host.userid),
           username: visit.host.username,
           thumbnail: visit.host.picture,
-          profileUrl: `/workspace/${workspaceId}/profile/${visit.host.userid}`,
+          profileUrl: `https://www.roblox.com/users/${visit.host.userid}/profile`,
         },
       })),
     }))
