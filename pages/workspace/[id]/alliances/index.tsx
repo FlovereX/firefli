@@ -2,7 +2,6 @@ import workspace from "@/layouts/workspace";
 import { pageWithLayout } from "@/layoutTypes";
 import { loginState, workspacestate } from "@/state";
 import axios from "axios";
-import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState, Fragment, useMemo } from "react";
 import randomText from "@/utils/randomText";
@@ -329,7 +328,7 @@ const Allies: pageWithLayout<pageProps> = (props) => {
                             orientation="top"
                             tooltipText={rep.username}
                           >
-                            <Link href={`/workspace/${id}/profile/${rep.userid}`}>
+                            <a href={`https://www.roblox.com/users/${rep.userid}/profile`} target="_blank" rel="noopener noreferrer">
                               <div
                                 className={`w-8 h-8 rounded-full flex items-center justify-center ${getRandomBg(
                                   rep.userid
@@ -342,7 +341,7 @@ const Allies: pageWithLayout<pageProps> = (props) => {
                                   style={{ background: "transparent" }}
                                 />
                               </div>
-                            </Link>
+                            </a>
                           </Tooltip>
                         ))}
                       </div>
