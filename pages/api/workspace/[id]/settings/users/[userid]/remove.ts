@@ -62,15 +62,26 @@ export async function handler(
 		}
 	});
 
-	await prisma.workspaceMember.updateMany({
+	await prisma.departmentMember.deleteMany({
 		where: {
 			userId: parseInt(req.query.userid as string),
 			workspaceGroupId: parseInt(req.query.id as string)
-		},
-		data: {
-			joinDate: null
+		}
+	}).catch(() => {});
+
+	await prisma.workspaceMember.deleteMany({
+		where: {
+			userId: parseInt(req.query.userid as string),
+			workspaceGroupId: parseInt(req.query.id as string)
 		}
 	});
+
+	await prisma.rank.deleteMany({
+		where: {
+			userId: parseInt(req.query.userid as string),
+			workspaceGroupId: parseInt(req.query.id as string)
+		}
+	}).catch(() => {});
 
 	res.status(200).json({ success: true })
 }

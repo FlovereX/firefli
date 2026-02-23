@@ -633,24 +633,26 @@ export const getServerSideProps = withPermissionCheckSsr(
 
     let memberRoleName: string | null = null;
     try {
-      const workspaceGroupId = parseInt(query.id as string);
-      const roles = await noblox.getRoles(workspaceGroupId);
-      const userRankRecord =
-        user?.ranks?.find(
-          (r: any) => Number(r.workspaceGroupId) === workspaceGroupId
-        ) || user?.ranks?.[0];
+      if (memberRoles.length > 0) {
+        const workspaceGroupId = parseInt(query.id as string);
+        const roles = await noblox.getRoles(workspaceGroupId);
+        const userRankRecord =
+          user?.ranks?.find(
+            (r: any) => Number(r.workspaceGroupId) === workspaceGroupId
+          ) || user?.ranks?.[0];
 
-      if (userRankRecord) {
-        const storedValue = Number(userRankRecord.rankId);
-        if (storedValue > 255) {
-          const groupRole = roles.find((r: any) => r.id === storedValue);
-          if (groupRole?.name) {
-            memberRoleName = groupRole.name;
-          }
-        } else {
-          const groupRole = roles.find((r: any) => r.rank === storedValue);
-          if (groupRole?.name) {
-            memberRoleName = groupRole.name;
+        if (userRankRecord) {
+          const storedValue = Number(userRankRecord.rankId);
+          if (storedValue > 255) {
+            const groupRole = roles.find((r: any) => r.id === storedValue);
+            if (groupRole?.name) {
+              memberRoleName = groupRole.name;
+            }
+          } else {
+            const groupRole = roles.find((r: any) => r.rank === storedValue);
+            if (groupRole?.name) {
+              memberRoleName = groupRole.name;
+            }
           }
         }
       }

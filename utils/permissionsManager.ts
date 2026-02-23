@@ -915,6 +915,43 @@ export async function checkGroupRoles(groupID: number) {
               },
             });
           }
+          
+          const userAfterCleanup = await prisma.user.findUnique({
+            where: { userid: user.userid },
+            include: {
+              roles: {
+                where: { workspaceGroupId: groupID },
+              },
+            },
+          });
+          
+          if (!userAfterCleanup?.roles.length) {
+            console.log(
+              `[Refresh] User ${user.userid} has no remaining roles - removing workspaceMember and department assignments`
+            );
+            await prisma.departmentMember.deleteMany({
+              where: {
+                workspaceGroupId: groupID,
+                userId: user.userid,
+              },
+            }).catch((error) => {
+              console.error(
+                `[Refresh] Failed to remove departments for user ${user.userid}:`,
+                error
+              );
+            });
+            await prisma.workspaceMember.deleteMany({
+              where: {
+                workspaceGroupId: groupID,
+                userId: user.userid,
+              },
+            }).catch((error) => {
+              console.error(
+                `[Refresh] Failed to remove workspaceMember for user ${user.userid}:`,
+                error
+              );
+            });
+          }
           continue;
         }
         
@@ -1036,26 +1073,65 @@ export async function checkGroupRoles(groupID: number) {
               },
             });
             
-            const remainingRoles = user.roles.filter(r => {
-              if (r.isOwnerRole || !r.groupRoles) return false;
-              return r.id !== userRole.id;
-            });
-            
-            if (remainingRoles.length === 0) {
+            const newCorrectRole = rs.find((r) => r.groupRoles?.includes(currentRobloxRoleId) && !r.isOwnerRole);
+            if (newCorrectRole) {
               console.log(
-                `[Refresh] User ${user.userid} has no more valid roles - removing all department assignments`
+                `[Refresh] Re-assigning user ${user.userid} to role "${newCorrectRole.name}" based on current rank (role ID: ${currentRobloxRoleId})`
               );
-              await prisma.departmentMember.deleteMany({
-                where: {
-                  workspaceGroupId: groupID,
-                  userId: user.userid,
-                },
-              }).catch((error) => {
-                console.error(
-                  `[Refresh] Failed to remove departments for user ${user.userid}:`,
-                  error
-                );
+              await prisma.user
+                .update({
+                  where: { userid: user.userid },
+                  data: { roles: { connect: { id: newCorrectRole.id } } },
+                })
+                .catch((error) => {
+                  console.error(
+                    `[Refresh] Failed to assign new role ${newCorrectRole.id} to user ${user.userid}:`,
+                    error
+                  );
+                });
+              await prisma.roleMember
+                .upsert({
+                  where: {
+                    roleId_userId: {
+                      roleId: newCorrectRole.id,
+                      userId: user.userid,
+                    },
+                  },
+                  update: { manuallyAdded: false },
+                  create: {
+                    roleId: newCorrectRole.id,
+                    userId: user.userid,
+                    manuallyAdded: false,
+                  },
+                })
+                .catch((error) => {
+                  console.error(
+                    `[Refresh] Failed to create RoleMember for user ${user.userid}:`,
+                    error
+                  );
+                });
+            } else {
+              const remainingRoles = user.roles.filter(r => {
+                if (r.isOwnerRole || !r.groupRoles) return false;
+                return r.id !== userRole.id;
               });
+              
+              if (remainingRoles.length === 0) {
+                console.log(
+                  `[Refresh] User ${user.userid} has no more valid roles - removing all department assignments`
+                );
+                await prisma.departmentMember.deleteMany({
+                  where: {
+                    workspaceGroupId: groupID,
+                    userId: user.userid,
+                  },
+                }).catch((error) => {
+                  console.error(
+                    `[Refresh] Failed to remove departments for user ${user.userid}:`,
+                    error
+                  );
+                });
+              }
             }
           }
         }
