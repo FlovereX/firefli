@@ -179,14 +179,11 @@ export function isValidTimezone(label: string): boolean {
 }
 
 /**
- * Convert area-based timezone label to IANA timezone identifier
- * Used for Date.toLocaleString() which requires IANA identifiers
- * @param areaBasedLabel - area-based timezone label (e.g., "UTC+10:00 (AEST)")
- * @returns IANA timezone identifier or null if not found
+ * Converts our UTC offset format (like "UTC+10:00 (AEST)") to IANA format
+ * that toLocaleString() actually understands. Otherwise we get yelled at.
  */
 export function areaBasedToIANATimezone(areaBasedLabel: string): string | null {
   const ianaMapping: Record<string, string> = {
-    // UTC offsets mapped to representative IANA timezones
     'UTC-12:00': 'Etc/GMT+12',
     'UTC-11:00 (SST)': 'Pacific/Pago_Pago',
     'UTC-10:00 (HST)': 'Pacific/Honolulu',
