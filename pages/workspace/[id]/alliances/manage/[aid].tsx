@@ -835,25 +835,27 @@ const ManageAlly: pageWithLayout<pageProps> = (props) => {
                         orientation="top"
                         tooltipText={rep.username}
                       >
-                        <div
-                          className={`w-8 h-8 p-0.5 rounded-full flex items-center justify-center ${getRandomBg(
-                            rep.userid
-                          )} border-2 ${
-                            (props as any).missingReps?.some(
-                              (m: any) =>
-                                Number(m.userid) === Number(rep.userid)
-                            )
-                              ? "border-amber-400 opacity-70"
-                              : "border-white"
-                          } hover:scale-110 transition-transform`}
-                        >
-                          <img
-                            src={rep.thumbnail}
-                            className="w-full h-full rounded-full object-cover"
-                            alt={rep.username}
-                            style={{ background: "transparent" }}
-                          />
-                        </div>
+                        <a href={`https://www.roblox.com/users/${rep.userid}/profile`} target="_blank" rel="noopener noreferrer">
+                          <div
+                            className={`w-8 h-8 p-0.5 rounded-full flex items-center justify-center ${getRandomBg(
+                              rep.userid
+                            )} border-2 ${
+                              (props as any).missingReps?.some(
+                                (m: any) =>
+                                  Number(m.userid) === Number(rep.userid)
+                              )
+                                ? "border-amber-400 opacity-70"
+                                : "border-white"
+                            } hover:scale-110 transition-transform cursor-pointer`}
+                          >
+                            <img
+                              src={rep.thumbnail}
+                              className="w-full h-full rounded-full object-cover"
+                              alt={rep.username}
+                              style={{ background: "transparent" }}
+                            />
+                          </div>
+                        </a>
                       </Tooltip>
                     ))}
                   </div>
@@ -1026,7 +1028,9 @@ const ManageAlly: pageWithLayout<pageProps> = (props) => {
                           key={`rep-${index}`}
                           className="text-sm text-zinc-700 dark:text-zinc-300"
                         >
-                          • {rep.username}
+                          • <a href={`https://www.roblox.com/users/${rep.userid}/profile`} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 underline">
+                            {rep.username}
+                          </a>
                           {(props as any).missingReps?.some(
                             (m: any) => Number(m.userid) === Number(rep.userid)
                           ) && (

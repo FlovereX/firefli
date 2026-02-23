@@ -60,6 +60,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         userId: Number(rep.userid),
         username: rep.username,
         thumbnail: rep.picture,
+        profileUrl: `https://www.roblox.com/users/${rep.userid}/profile`,
       })),
       recentVisits: ally.allyVisits.map((visit) => ({
         id: visit.id,

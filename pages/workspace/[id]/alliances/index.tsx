@@ -328,18 +328,20 @@ const Allies: pageWithLayout<pageProps> = (props) => {
                             orientation="top"
                             tooltipText={rep.username}
                           >
-                            <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center ${getRandomBg(
-                                rep.userid
-                              )} border-2 border-gray-200 dark:border-zinc-700 transition-transform overflow-hidden`}
-                            >
-                              <img
-                                src={rep.thumbnail}
-                                className="w-full h-full object-cover"
-                                alt={rep.username}
-                                style={{ background: "transparent" }}
-                              />
-                            </div>
+                            <a href={`https://www.roblox.com/users/${rep.userid}/profile`} target="_blank" rel="noopener noreferrer">
+                              <div
+                                className={`w-8 h-8 rounded-full flex items-center justify-center ${getRandomBg(
+                                  rep.userid
+                                )} border-2 border-gray-200 dark:border-zinc-700 transition-transform overflow-hidden hover:scale-110 cursor-pointer`}
+                              >
+                                <img
+                                  src={rep.thumbnail}
+                                  className="w-full h-full object-cover"
+                                  alt={rep.username}
+                                  style={{ background: "transparent" }}
+                                />
+                              </div>
+                            </a>
                           </Tooltip>
                         ))}
                       </div>
