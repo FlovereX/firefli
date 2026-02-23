@@ -10,6 +10,7 @@ import {
   IconSearch,
   IconChevronLeft,
   IconChevronRight,
+  IconRefresh,
 } from "@tabler/icons-react";
 import { loginState, workspacestate } from "@/state";
 
@@ -139,6 +140,53 @@ const Button: FC<Props> = (props) => {
       `/api/workspace/${workspace.groupId}/settings/users/${id}/update`,
       { role: roleid }
     );
+  };
+
+  const resyncUser = async (id: number) => {
+    try {
+      const response = await axios.post(
+        `/api/workspace/${workspace.groupId}/settings/users/${id}/resync`
+      );
+      const newRoleId = response.data.newRole;
+      for (const [roleId, pageData] of Object.entries(rolePages)) {
+        const userIndex = pageData.users.findIndex((u: any) => u.userid === id);
+        if (userIndex !== -1) {
+          if (newRoleId && newRoleId !== roleId) {
+            const updatedUsers = pageData.users.filter((u: any) => u.userid !== id);
+            setRolePages(prev => ({
+              ...prev,
+              [roleId]: { ...prev[roleId], users: updatedUsers, total: prev[roleId].total - 1 },
+            }));
+            setRoleCounts(prev => ({
+              ...prev,
+              [roleId]: Math.max(0, (prev[roleId] || 1) - 1),
+              [newRoleId]: (prev[newRoleId] || 0) + 1,
+            }));
+            if (rolePages[newRoleId]) {
+              fetchRoleUsers(newRoleId, rolePages[newRoleId].page);
+            }
+          } else {
+            const updatedUsers = [...pageData.users];
+            updatedUsers[userIndex] = { ...updatedUsers[userIndex], manuallyAdded: false };
+            setRolePages(prev => ({
+              ...prev,
+              [roleId]: { ...prev[roleId], users: updatedUsers },
+            }));
+          }
+          break;
+        }
+      }
+      if (typeof window !== "undefined") {
+        const toast = (await import("react-hot-toast")).default;
+        toast.success("User synced to correct role.");
+      }
+    } catch (err: any) {
+      if (typeof window !== "undefined") {
+        const toast = (await import("react-hot-toast")).default;
+        const msg = err?.response?.data?.error || "Failed to resync user.";
+        toast.error(msg);
+      }
+    }
   };
 
   const removeUser = async (id: number) => {
@@ -335,6 +383,16 @@ const Button: FC<Props> = (props) => {
                                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                                         Admin
                                       </span>
+                                    )}
+                                    {user.manuallyAdded && (
+                                      <button
+                                        onClick={() => resyncUser(user.userid)}
+                                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                                        title="This user was manually assigned a role and is excluded from automatic sync. Click to re-queue them."
+                                      >
+                                        <IconRefresh size={12} className="mr-1" />
+                                        Resync
+                                      </button>
                                     )}
                                   </div>
                                   <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">

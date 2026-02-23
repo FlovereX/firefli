@@ -97,6 +97,15 @@ export async function handler(
 							joinDate: true,
 						},
 					},
+					roleMembers: {
+						where: {
+							role: { workspaceGroupId },
+						},
+						select: {
+							manuallyAdded: true,
+							roleId: true,
+						},
+					},
 				},
 			}),
 		]);
@@ -105,6 +114,7 @@ export async function handler(
 			const uid = Number(user.userid);
 			const username = user.username || 'Unknown';
 			const displayName = user.displayName || username;
+			const roleMember = user.roleMembers?.[0];
 
 			return {
 				userid: uid,
@@ -113,6 +123,7 @@ export async function handler(
 				displayName,
 				registered: user.registered,
 				roles: user.roles,
+				manuallyAdded: roleMember?.manuallyAdded ?? false,
 				workspaceMemberships: user.workspaceMemberships?.map((m) => ({
 					...m,
 					userId: Number(m.userId),
