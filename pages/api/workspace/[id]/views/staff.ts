@@ -221,6 +221,8 @@ export default withPermissionCheck(
       }
 
       const robloxRoles = await noblox.getRoles(workspaceGroupId).catch(() => []);
+      // Sort roles by rank hierarchy (0 → 255) for consistent display
+      robloxRoles.sort((a, b) => a.rank - b.rank);
       const roleIdToInfoMap = new Map<number, { rank: number; name: string }>();
       robloxRoles.forEach(role => {
         roleIdToInfoMap.set(role.id, { rank: role.rank, name: role.name });
@@ -605,7 +607,6 @@ export default withPermissionCheck(
       let ranks: any[] = [];
       try {
         ranks = await noblox.getRoles(workspaceGroupId);
-        // Sort ranks ascending (0 → 255)
         ranks = ranks.sort((a, b) => a.rank - b.rank);
       } catch (error) {
         console.error('Error fetching ranks from Roblox:', error);

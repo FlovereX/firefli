@@ -39,6 +39,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
         id: role.id,
         name: role.name,
         rank: role.rank,
+        groupId: workspace.groupId,
       }));
 
     return res.status(200).json({
