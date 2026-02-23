@@ -221,6 +221,8 @@ export default withPermissionCheck(
       }
 
       const robloxRoles = await noblox.getRoles(workspaceGroupId).catch(() => []);
+      // Sort roles by rank hierarchy (0 → 255) for consistent display
+      robloxRoles.sort((a, b) => a.rank - b.rank);
       const roleIdToInfoMap = new Map<number, { rank: number; name: string }>();
       robloxRoles.forEach(role => {
         roleIdToInfoMap.set(role.id, { rank: role.rank, name: role.name });
