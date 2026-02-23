@@ -39,6 +39,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import noblox from "noblox.js";
+import { areaBasedToIANATimezone } from "@/utils/timezoneUtils";
 
 export const getServerSideProps = withPermissionCheckSsr(
   async ({ query, req }) => {
@@ -1167,7 +1168,7 @@ const Profile: pageWithLayout<pageProps> = ({
                   workspaceMember.timezone &&
                   (() => {
                     const userHour = new Date().toLocaleString("en-US", {
-                      timeZone: workspaceMember.timezone,
+                      timeZone: areaBasedToIANATimezone(workspaceMember.timezone) || "UTC",
                       hour: "numeric",
                       hour12: false,
                     });
@@ -1183,7 +1184,7 @@ const Profile: pageWithLayout<pageProps> = ({
                         )}
                         <span className="text-xs sm:text-sm font-semibold tabular-nums">
                           {currentTime.toLocaleTimeString("en-US", {
-                            timeZone: workspaceMember.timezone,
+                            timeZone: areaBasedToIANATimezone(workspaceMember.timezone) || "UTC",
                             hour: "2-digit",
                             minute: "2-digit",
                             hour12: true,

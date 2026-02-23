@@ -177,3 +177,40 @@ export function getTimezoneOptions(): string[] {
 export function isValidTimezone(label: string): boolean {
   return areaBasedTimezones.some((tz) => tz.label === label);
 }
+
+/**
+ * Converts our UTC offset format (like "UTC+10:00 (AEST)") to IANA format
+ * that toLocaleString() actually understands. Otherwise we get yelled at.
+ */
+export function areaBasedToIANATimezone(areaBasedLabel: string): string | null {
+  const ianaMapping: Record<string, string> = {
+    'UTC-12:00': 'Etc/GMT+12',
+    'UTC-11:00 (SST)': 'Pacific/Pago_Pago',
+    'UTC-10:00 (HST)': 'Pacific/Honolulu',
+    'UTC-09:00 (AKST)': 'America/Anchorage',
+    'UTC-08:00 (PST)': 'America/Los_Angeles',
+    'UTC-07:00 (MST)': 'America/Denver',
+    'UTC-06:00 (CST)': 'America/Chicago',
+    'UTC-05:00 (EST)': 'America/New_York',
+    'UTC-04:00 (EDT)': 'America/New_York',
+    'UTC-03:00 (ART)': 'America/Argentina/Buenos_Aires',
+    'UTC-02:00': 'Etc/GMT+2',
+    'UTC-01:00': 'Atlantic/Azores',
+    'UTC±00:00 (GMT)': 'Europe/London',
+    'UTC+01:00 (CET)': 'Europe/Paris',
+    'UTC+02:00 (EET)': 'Europe/Helsinki',
+    'UTC+03:00 (EAT)': 'Africa/Nairobi',
+    'UTC+04:00 (GST)': 'Asia/Dubai',
+    'UTC+05:00 (PKT)': 'Asia/Karachi',
+    'UTC+05:30 (IST)': 'Asia/Kolkata',
+    'UTC+06:00 (BST)': 'Asia/Dhaka',
+    'UTC+07:00 (ICT)': 'Asia/Bangkok',
+    'UTC+08:00 (CST)': 'Asia/Shanghai',
+    'UTC+09:00 (JST)': 'Asia/Tokyo',
+    'UTC+10:00 (AEST)': 'Australia/Sydney',
+    'UTC+11:00': 'Pacific/Guadalcanal',
+    'UTC+12:00 (NZST)': 'Pacific/Auckland',
+  };
+
+  return ianaMapping[areaBasedLabel] || null;
+}
