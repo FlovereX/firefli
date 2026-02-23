@@ -605,6 +605,7 @@ export default withPermissionCheck(
       let ranks: any[] = [];
       try {
         ranks = await noblox.getRoles(workspaceGroupId);
+        ranks = ranks.sort((a, b) => b.rank - a.rank);
       } catch (error) {
         console.error('Error fetching ranks from Roblox:', error);
         ranks = [];
