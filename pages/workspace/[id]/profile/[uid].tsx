@@ -1064,11 +1064,7 @@ const Profile: pageWithLayout<pageProps> = ({
 
   const refetchUserBook = async () => {
     try {
-      const response = await fetch(
-        `/api/workspace/${router.query.id}/userbook/${router.query.uid}`
-      );
-      const data = await response.json();
-      setUserBook(data.userBook);
+      router.replace(router.asPath, undefined, { scroll: false });
     } catch (error) {
       console.error("Error refetching userbook:", error);
     }
