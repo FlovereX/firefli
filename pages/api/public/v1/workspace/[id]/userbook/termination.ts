@@ -1,0 +1,223 @@
+import type { NextApiRequest, NextApiResponse } from "next";
+import prisma from "@/utils/database";
+import { validateApiKey } from "@/utils/api-auth";
+import { withPublicApiRateLimit } from "@/utils/prtl";
+import { logAudit } from "@/utils/logs";
+import { getRankingProvider } from "@/utils/rankgun";
+import * as noblox from "noblox.js";
+
+async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "POST") {
+    return res
+      .status(405)
+      .json({ success: false, error: "Method not allowed" });
+  }
+
+  const apiKey = req.headers.authorization?.replace("Bearer ", "");
+  if (!apiKey)
+    return res.status(401).json({ success: false, error: "Missing API key" });
+
+  const workspaceId = Number.parseInt(req.query.id as string);
+  if (!workspaceId)
+    return res
+      .status(400)
+      .json({ success: false, error: "Missing workspace ID" });
+
+  try {
+    const key = await validateApiKey(apiKey, workspaceId);
+    if (!key) {
+      return res
+        .status(401)
+        .json({ success: false, error: "Invalid or expired API key" });
+    }
+
+    const { userId, reason } = req.body;
+
+    if (!userId || !reason) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: userId, reason",
+      });
+    }
+
+    const numericUserId = Number.parseInt(String(userId));
+    if (isNaN(numericUserId)) {
+      return res
+        .status(400)
+        .json({ success: false, error: "userId must be a valid number" });
+    }
+
+    const adminId = BigInt(key.createdById);
+
+    if (BigInt(numericUserId) === adminId) {
+      return res.status(400).json({
+        success: false,
+        error: "You cannot perform actions on yourself.",
+      });
+    }
+
+    let rankBefore: number | null = null;
+    let rankNameBefore: string | null = null;
+
+    const rankingProvider = await getRankingProvider(workspaceId);
+
+    if (rankingProvider) {
+      try {
+        const targetUserRank = await prisma.rank.findFirst({
+          where: {
+            userId: BigInt(numericUserId),
+            workspaceGroupId: workspaceId,
+          },
+        });
+
+        if (targetUserRank) {
+          rankBefore = Number(targetUserRank.rankId);
+
+          if (rankingProvider.type === "roblox_cloud") {
+            try {
+              const { RobloxCloudRankingAPI, getWorkspaceRobloxApiKey } =
+                await import("@/utils/openCloud");
+              const robloxApiKey = await getWorkspaceRobloxApiKey(workspaceId);
+              if (robloxApiKey) {
+                const cloudApi = new RobloxCloudRankingAPI(
+                  robloxApiKey,
+                  workspaceId,
+                );
+                const roles = await cloudApi.getGroupRoles();
+                const roleInfo = roles.find((r) => r.rank === rankBefore);
+                rankNameBefore = roleInfo?.name || null;
+              }
+            } catch {
+              try {
+                const currentRankInfo = await noblox.getRole(
+                  workspaceId,
+                  rankBefore,
+                );
+                rankNameBefore = currentRankInfo?.name || null;
+              } catch {}
+            }
+          } else {
+            try {
+              const currentRankInfo = await noblox.getRole(
+                workspaceId,
+                rankBefore,
+              );
+              rankNameBefore = currentRankInfo?.name || null;
+            } catch {}
+          }
+        }
+      } catch (error) {
+        console.error("[Public API] Error getting current rank:", error);
+      }
+
+      try {
+        const result = await rankingProvider.terminateUser(numericUserId);
+
+        if (result && !result.success) {
+          let errorMessage = result.error || "Termination failed.";
+          if (typeof errorMessage === "object") {
+            try {
+              errorMessage = JSON.stringify(errorMessage);
+            } catch {
+              errorMessage = String(errorMessage);
+            }
+          }
+          return res
+            .status(400)
+            .json({ success: false, error: String(errorMessage) });
+        }
+
+        if (result?.success) {
+          const currentUser = await prisma.user.findFirst({
+            where: { userid: BigInt(numericUserId) },
+            include: {
+              roles: { where: { workspaceGroupId: workspaceId } },
+            },
+          });
+
+          if (currentUser && currentUser.roles.length > 0) {
+            for (const role of currentUser.roles) {
+              await prisma.user.update({
+                where: { userid: BigInt(numericUserId) },
+                data: { roles: { disconnect: { id: role.id } } },
+              });
+            }
+          }
+
+          await prisma.rank.deleteMany({
+            where: {
+              userId: BigInt(numericUserId),
+              workspaceGroupId: workspaceId,
+            },
+          });
+        }
+      } catch (error: any) {
+        let errorMessage =
+          error?.response?.data?.error ||
+          error?.message ||
+          "Termination failed";
+        if (typeof errorMessage === "object") {
+          try {
+            errorMessage = JSON.stringify(errorMessage);
+          } catch {
+            errorMessage = String(errorMessage);
+          }
+        }
+        return res
+          .status(500)
+          .json({ success: false, error: String(errorMessage) });
+      }
+    }
+
+    const userbook = await prisma.userBook.create({
+      data: {
+        userId: BigInt(numericUserId),
+        type: "termination",
+        workspaceGroupId: workspaceId,
+        reason,
+        adminId,
+        rankBefore,
+        rankAfter: 1,
+        rankNameBefore,
+        rankNameAfter: null,
+      },
+      include: { admin: true },
+    });
+
+    try {
+      await logAudit(
+        workspaceId,
+        Number(adminId),
+        "userbook.create",
+        `userbook:${userbook.id}`,
+        {
+          type: "termination",
+          userId: numericUserId,
+          adminId: Number(adminId),
+          reason,
+          rankBefore,
+          rankAfter: 1,
+          rankNameBefore,
+          source: "public_api",
+        },
+      );
+    } catch {}
+
+    return res.status(201).json({
+      success: true,
+      entry: JSON.parse(
+        JSON.stringify(userbook, (_, v) =>
+          typeof v === "bigint" ? v.toString() : v,
+        ),
+      ),
+      terminated: true,
+    });
+  } catch (error) {
+    console.error("[Public API] Error creating termination entry:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
+  }
+}
+
+export default withPublicApiRateLimit(handler);
