@@ -63,8 +63,12 @@ export async function handler(
 	if (tryandfind) return res.status(409).json({ success: false, error: 'Workspace already exists' })
 
 	if (process.env.NEXT_PUBLIC_FIREFLI_LIMIT === 'true') {
-		const alreadyOwns = await prisma.workspace.findFirst({ where: { ownerId: BigInt(req.session.userid) } })
-		if (alreadyOwns) return res.status(403).json({ success: false, error: 'You already own a workspace' })
+		const limit = parseInt(process.env.NEXT_PUBLIC_LIMIT || '1', 10);
+		const workspaceCount = await prisma.workspace.count({ where: { ownerId: BigInt(req.session.userid) } })
+		if (workspaceCount >= limit) {
+			const errorMsg = limit === 1 ? 'You already own a workspace' : `You have reached the maximum of ${limit} workspaces`;
+			return res.status(403).json({ success: false, error: errorMsg })
+		}
 	}
 	const urrole = await noblox.getRankInGroup(groupId, req.session.userid).catch(() => null)
 	if (!urrole) return res.status(400).json({ success: false, error: 'You are not a high enough rank' })

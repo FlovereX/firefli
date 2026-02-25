@@ -70,11 +70,11 @@ export async function handler(
 	]);
 	let canMakeWorkspace = false;
 	if (process.env.NEXT_PUBLIC_FIREFLI_LIMIT === 'true') {
-		const existingWorkspace = await prisma.workspace.findFirst({
-			where: { ownerId: BigInt(userId) },
-			select: { groupId: true }
+		const limit = parseInt(process.env.NEXT_PUBLIC_LIMIT || '1', 10);
+		const workspaceCount = await prisma.workspace.count({
+			where: { ownerId: BigInt(userId) }
 		});
-		canMakeWorkspace = !existingWorkspace;
+		canMakeWorkspace = workspaceCount < limit;
 	} else {
 		canMakeWorkspace = dbuser?.isOwner || false;
 	}
