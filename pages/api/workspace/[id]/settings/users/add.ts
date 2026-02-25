@@ -7,7 +7,7 @@ import { withPermissionCheck } from '@/utils/permissionsManager'
 import { logAudit } from '@/utils/logs';
 import { getUsername, getThumbnail, getDisplayName } from '@/utils/userinfoEngine'
 import { getRobloxUsername, getRobloxThumbnail, getRobloxDisplayName, getRobloxUserId } from "@/utils/roblox";
-import * as noblox from 'noblox.js'
+import { getWorkspaceRobloxApiKey } from "@/utils/openCloud";
 type Data = {
 	success: boolean
 	error?: string
@@ -81,6 +81,56 @@ export async function handler(
 			userId: userid,
 			manuallyAdded: true
 		}
+	});
+	
+	const workspaceGroupId = parseInt(req.query.id as string);
+	let robloxRoleId: number = 0;
+	const userIdNum = Number(userid);
+	
+	try {
+		const apiKey = await getWorkspaceRobloxApiKey(workspaceGroupId);
+		if (apiKey) {
+			const ocRes = await fetch(
+				`https://apis.roblox.com/cloud/v2/groups/${workspaceGroupId}/memberships?filter=user == 'users/${userIdNum}'&maxPageSize=1`,
+				{ headers: { "x-api-key": apiKey } },
+			);
+			if (ocRes.ok) {
+				const data = await ocRes.json();
+				if (data.groupMemberships?.[0]?.role) {
+					const rolePath = data.groupMemberships[0].role;
+					const match = rolePath.match(/roles\/(\d+)/);
+					if (match) {
+						robloxRoleId = parseInt(match[1]);
+						console.log(`[Add User] Fetched Roblox role ID ${robloxRoleId} for user ${userIdNum} in group ${workspaceGroupId}`);
+					}
+				} else {
+					console.log(`[Add User] User ${userIdNum} is not in group ${workspaceGroupId}, setting role to 0 (Guest)`);
+				}
+			} else {
+				console.warn(`[Add User] Open Cloud API returned status ${ocRes.status} for user ${userIdNum}`);
+			}
+		} else {
+			console.warn(`[Add User] No Open Cloud API key configured for group ${workspaceGroupId}, user ${userIdNum} will have role 0 (Guest)`);
+		}
+	} catch (e) {
+		console.error(`[Add User] Failed to fetch Roblox role for user ${userIdNum}:`, e);
+	}
+	
+	await prisma.rank.upsert({
+		where: {
+			userId_workspaceGroupId: {
+				userId: userid,
+				workspaceGroupId: workspaceGroupId,
+			},
+		},
+		update: {
+			rankId: BigInt(robloxRoleId),
+		},
+		create: {
+			userId: userid,
+			workspaceGroupId: workspaceGroupId,
+			rankId: BigInt(robloxRoleId),
+		},
 	});
 	
 	await prisma.workspaceMember.upsert({

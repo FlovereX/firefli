@@ -889,6 +889,30 @@ export async function checkGroupRoles(groupID: number) {
               console.log(
                 `[Refresh] Keeping manually added role "${userRole.name}" for user ${user.userid}`
               );
+              await prisma.rank
+                .upsert({
+                  where: {
+                    userId_workspaceGroupId: {
+                      userId: user.userid,
+                      workspaceGroupId: groupID,
+                    },
+                  },
+                  update: {
+                    rankId: BigInt(0),
+                  },
+                  create: {
+                    userId: user.userid,
+                    workspaceGroupId: groupID,
+                    rankId: BigInt(0),
+                  },
+                })
+                .catch((error) => {
+                  console.error(
+                    `[Refresh] Failed to update rank to Guest for manually added user ${user.userid}:`,
+                    error
+                  );
+                });
+              
               continue;
             }
             
@@ -1004,6 +1028,31 @@ export async function checkGroupRoles(groupID: number) {
               console.log(
                 `[Refresh] Keeping manually added role "${userRole.name}" for user ${user.userid}.`
               );
+              
+              await prisma.rank
+                .upsert({
+                  where: {
+                    userId_workspaceGroupId: {
+                      userId: user.userid,
+                      workspaceGroupId: groupID,
+                    },
+                  },
+                  update: {
+                    rankId: BigInt(0),
+                  },
+                  create: {
+                    userId: user.userid,
+                    workspaceGroupId: groupID,
+                    rankId: BigInt(0),
+                  },
+                })
+                .catch((error) => {
+                  console.error(
+                    `[Refresh] Failed to update rank to Guest for manually added user ${user.userid}:`,
+                    error
+                  );
+                });
+              
               continue;
             }
             
