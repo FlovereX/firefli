@@ -23,7 +23,7 @@ export default withSessionRoute(async function handler(
     return res.status(401).json({ success: false, error: "Unauthorized" });
   }
 
-  const isOwnProfile = String(sessionUserId) === String(uid);
+  const isOwnProfile = BigInt(sessionUserId) === targetUserId;
   if (!isOwnProfile) {
     const user = await prisma.user.findFirst({
       where: {

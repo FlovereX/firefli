@@ -30,7 +30,7 @@ export async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
       return res.status(404).json({ success: false, error: "Workspace not found." });
     }
 
-    const isOwner = workspace.ownerId && String(workspace.ownerId) === String(req.session.userid);
+    const isOwner = workspace.ownerId && workspace.ownerId === BigInt(req.session.userid as number);
     
     if (!isOwner) {
       return res.status(403).json({ success: false, error: "Only workspace owners may delete entries." });

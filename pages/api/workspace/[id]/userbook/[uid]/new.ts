@@ -100,7 +100,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
   }
   const userId = parseInt(uid as string);
 
-  if (String(userId) === String(req.session.userid)) {
+  if (BigInt(userId) === req.session.userid) {
     return res.status(400).json({
       success: false,
       error: "You cannot perform actions on yourself.",
@@ -292,7 +292,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
       if (type === "termination" && result?.success) {
         try {
           // Compare as strings to handle any type coercion issues
-          if (String(userId) === String(req.session.userid)) {
+          if (BigInt(userId) === req.session.userid) {
             return res.status(400).json({
               success: false,
               error: "You cannot terminate yourself.",
