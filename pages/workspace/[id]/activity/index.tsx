@@ -184,7 +184,7 @@ const Activity: pageWithLayout = () => {
       }
     }
 
-    if (id && login.userId) {
+    if (id && login.userId && login.userId !== 1) {
       setLoadingData(true);
       fetchUserData();
       const interval = setInterval(() => {
