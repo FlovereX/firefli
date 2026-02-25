@@ -140,7 +140,6 @@ local function SaveToDataStore(batch)
 end
 
 local function RetryFromDataStore()
-	-- Attempt to resend any failed batches stored in DataStore
 	local success, index = pcall(function()
 		return retryStore:GetAsync(DS_INDEX_KEY)
 	end)
@@ -166,33 +165,26 @@ local function RetryFromDataStore()
 				retried += 1
 				local sent = SendBatch(batch)
 				if sent then
-					-- Successfully sent, remove from DataStore
 					pcall(function()
 						retryStore:RemoveAsync(key)
 					end)
 					succeeded += 1
 				else
-					-- Still failing, keep for next retry
 					table.insert(remainingKeys, key)
 				end
 			else
-				-- Invalid/empty batch, clean it up
 				pcall(function()
 					retryStore:RemoveAsync(key)
 				end)
 			end
 		elseif ok and not batchJson then
-			-- Key exists in index but data is gone, skip
 		else
-			-- Failed to read, keep for next attempt
 			table.insert(remainingKeys, key)
 		end
 
-		-- Small delay to avoid DataStore rate limits
 		task.wait(1)
 	end
 
-	-- Update the index
 	pcall(function()
 		retryStore:SetAsync(DS_INDEX_KEY, remainingKeys)
 	end)
@@ -211,13 +203,11 @@ local function FlushQueue()
 		return
 	end
 
-	-- Swap out the queue so new events accumulate in a fresh table
 	local batch = eventQueue
 	eventQueue = {}
 
 	warn("Firefli: Flushing " .. #batch .. " queued events...")
 
-	-- Retry up to MAX_RETRIES times with backoff
 	local sent = false
 	for attempt = 1, MAX_RETRIES do
 		sent = SendBatch(batch)
@@ -359,14 +349,12 @@ Players.PlayerRemoving:Connect(function(Player)
 end)
 
 game:BindToClose(function()
-	-- Queue end events for all remaining players
 	for _, Player in pairs(Players:GetPlayers()) do
 		if isUserTracked(Player) then
 			QueueEndSession(Player)
 		end
 	end
 
-	-- Final synchronous flush with retries
 	if #eventQueue > 0 then
 		warn("Firefli: Server shutting down, flushing " .. #eventQueue .. " remaining events...")
 		FlushQueue()
@@ -377,7 +365,6 @@ end)
 
 -- ========== STARTUP ==========
 
--- Retry any previously failed batches from DataStore
 task.spawn(function()
 	task.wait(5) -- Let the server settle before retrying
 	RetryFromDataStore()
@@ -389,7 +376,6 @@ for _, Player in pairs(Players:GetPlayers()) do
 end
 
 -- ========== MAIN LOOP ==========
--- Handles periodic batch flushing, AFK tracking, and DataStore retries
 
 local lastFlush = os.clock()
 local lastDSRetry = os.clock()
