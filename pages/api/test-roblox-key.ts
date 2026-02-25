@@ -7,10 +7,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).json({ valid: false, message: "Method not allowed" });
   }
 
-  if (!req.session?.userid) {
-    return res.status(401).json({ valid: false, message: "Not logged in" });
-  }
-
   const { apiKey, groupId } = req.body;
 
   if (!apiKey || typeof apiKey !== "string") {
