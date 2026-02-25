@@ -110,6 +110,10 @@ export default withSessionRoute(async function handler(
       where: {
         userId,
         workspaceGroupId,
+        createdAt: {
+          gte: startDate,
+          lte: currentDate,
+        },
         archived: { not: true },
       },
       orderBy: { createdAt: "desc" },

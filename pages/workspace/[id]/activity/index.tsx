@@ -45,6 +45,7 @@ const Activity: pageWithLayout = () => {
   const [sessionDetails, setSessionDetails] = useState<any>({});
   const [concurrentUsers, setConcurrentUsers] = useState<any[]>([]);
   const [loadingSession, setLoadingSession] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [idleTimeEnabled, setIdleTimeEnabled] = useState(true);
   const [topStaff, setTopStaff] = useState<any[]>([]);
   const [activeUsers, setActiveUsers] = useState([]);
@@ -153,11 +154,26 @@ const Activity: pageWithLayout = () => {
 
         setTimeline(timelineData);
       } catch (error) {
-        console.error("Error fetching user data:", error);
+        if (axios.isAxiosError(error)) {
+          console.error('[Activity] API error details:', {
+            status: error.response?.status,
+            data: error.response?.data,
+          });
+          if (error.response?.status === 401) {
+            toast.error('You are not authorized to view this activity data');
+          } else if (error.response?.status === 404) {
+            toast.error('Activity data not found');
+          } else {
+            toast.error('Failed to load activity data. Please try refreshing the page.');
+          }
+        }
+      } finally {
+        setLoadingData(false);
       }
     }
 
     if (id && login.userId) {
+      setLoadingData(true);
       fetchUserData();
       const interval = setInterval(() => {
         fetchUserData();
@@ -289,6 +305,15 @@ const Activity: pageWithLayout = () => {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
       <div className="pagePadding">
+      {loadingData ? (
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">Loading your activity...</p>
+          </div>
+        </div>
+      ) : (
+      <>
       <div>
         <div className="flex items-center gap-3 mb-6">
           <div>
@@ -954,6 +979,9 @@ const Activity: pageWithLayout = () => {
           </div>
         </Dialog>
       </Transition>
+
+      </>
+      )}
 
       <Toaster position="bottom-center" />
       </div>

@@ -61,9 +61,6 @@ export async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
     await checkSpecificUser(userid);
 
     if (parsedConfig.role && (!userRank || userRank <= parsedConfig.role)) {
-      console.log(
-        `[BLOCKED] User ${userid} has insufficient rank (${userRank})`
-      );
       return res
         .status(200)
         .json({ success: true, error: "User is not the right rank" });
