@@ -128,15 +128,15 @@ const Docs: React.FC = () => {
                     {document.name}
                   </p>
                   <div className="mt-1 flex items-center gap-2">
-                    <div className={`h-6 w-6 rounded-full flex items-center justify-center overflow-hidden ${getRandomBg(document.owner?.userid.toString())}`}>
+                    <div className={`h-6 w-6 rounded-full flex items-center justify-center overflow-hidden ${getRandomBg(document.owner?.userid?.toString() || '')}`}>
                       <img
                         src={document.owner?.picture || '/default-avatar.jpg'}
-                        alt={`${document.owner?.username}'s avatar`}
+                        alt={`${document.owner?.username || 'Unknown'}'s avatar`}
                         className="h-6 w-6 object-cover rounded-full border-2 border-white"
                       />
                     </div>
                     <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                      Created by {document.owner?.username}
+                      Created by {document.owner?.username || 'Unknown'}
                     </p>
                   </div>
                 </div>
