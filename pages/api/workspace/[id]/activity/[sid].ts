@@ -13,7 +13,7 @@ type Data = {
 	error?: string;
 }
 
-export default withPermissionCheck(handler, 'view_activity');
+export default withSessionRoute(handler);
 
 export async function handler(
 	req: NextApiRequest,
@@ -29,6 +29,49 @@ export async function handler(
 		}
 	});
 	if (!session) return res.status(404).json({ success: false, error: "Session not found" });
+
+	const workspaceGroupId = parseInt(req.query.id as string);
+	const sessionUserId = req.session.userid;
+	const isOwnSession = session.userId.toString() === sessionUserId.toString();
+
+	if (!isOwnSession) {
+		const user = await prisma.user.findFirst({
+			where: {
+				userid: BigInt(sessionUserId),
+			},
+			include: {
+				roles: {
+					where: {
+						workspaceGroupId: workspaceGroupId,
+					},
+				},
+				workspaceMemberships: {
+					where: {
+						workspaceGroupId: workspaceGroupId,
+					},
+				},
+			},
+		});
+
+		if (!user) {
+			return res.status(401).json({ success: false, error: "Unauthorized" });
+		}
+
+		const membership = user.workspaceMemberships[0];
+		const isAdmin = membership?.isAdmin || false;
+		const userRole = user.roles[0];
+
+		if (!userRole) {
+			return res.status(401).json({ success: false, error: "Unauthorized" });
+		}
+
+		if (
+			!isAdmin &&
+			!userRole.permissions?.includes("view_activity")
+		) {
+			return res.status(401).json({ success: false, error: "Unauthorized" });
+		}
+	}
 
 	if(!session.universeId){
 		return res.status(200).json({
