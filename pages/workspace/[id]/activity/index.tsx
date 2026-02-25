@@ -57,15 +57,27 @@ const Activity: pageWithLayout = () => {
   useEffect(() => {
     async function fetchUserData() {
       try {
-        const profileRes = await axios.get(
-          `/api/workspace/${id}/profile/${login.userId}`
-        );
+        let profileRes;
+        try {
+          profileRes = await axios.get(
+            `/api/workspace/${id}/profile/${login.userId}`
+          );
+        } catch (profileErr: any) {
+          console.error('[Activity] Profile API failed:', profileErr.response?.status, profileErr.response?.data);
+          throw profileErr;
+        }
         const profileData = profileRes.data.data;
 
         // Fetch activity config to check if idle time tracking is enabled
-        const configRes = await axios.get(
-          `/api/workspace/${id}/settings/activity/getConfig`
-        );
+        let configRes;
+        try {
+          configRes = await axios.get(
+            `/api/workspace/${id}/settings/activity/getConfig`
+          );
+        } catch (configErr: any) {
+          console.error('[Activity] Config API failed:', configErr.response?.status, configErr.response?.data);
+          throw configErr;
+        }
         const idleTracking = configRes.data.idleTimeEnabled ?? true;
         setIdleTimeEnabled(idleTracking);
 

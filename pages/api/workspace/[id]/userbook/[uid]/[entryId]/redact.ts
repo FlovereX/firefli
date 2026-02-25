@@ -9,7 +9,7 @@ type Data = {
   entry?: any;
 };
 
-export default withPermissionCheck(handler, "manage_members");
+export default withPermissionCheck(handler, "logbook_redact");
 
 export async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
   if (req.method !== "POST")

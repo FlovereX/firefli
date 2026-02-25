@@ -19,12 +19,14 @@ export default withSessionRoute(async function handler(
   const sessionUserId = req.session.userid;
 
   if (!sessionUserId) {
+    console.log(`[Profile] No session userid, returning 401. uid param: ${uid}`);
     return res.status(401).json({ success: false, error: "Unauthorized" });
   }
 
-  const isOwnProfile = String(sessionUserId) === String(uid);
+  const isOwnProfile = sessionUserId.toString() === uid?.toString();
 
   if (!isOwnProfile) {
+    console.log(`[Profile] Not own profile. sessionUserId=${sessionUserId} (type: ${typeof sessionUserId}), uid=${uid} (type: ${typeof uid})`);
     const user = await prisma.user.findFirst({
       where: {
         userid: BigInt(sessionUserId),
@@ -44,6 +46,7 @@ export default withSessionRoute(async function handler(
     });
 
     if (!user) {
+      console.log(`[Profile] User not found in DB for sessionUserId=${sessionUserId}`);
       return res.status(401).json({ success: false, error: "Unauthorized" });
     }
 
@@ -51,6 +54,7 @@ export default withSessionRoute(async function handler(
     const isAdmin = membership?.isAdmin || false;
     const userRole = user.roles[0];
     if (!userRole) {
+      console.log(`[Profile] No role found for user ${sessionUserId} in workspace ${workspaceGroupId}`);
       return res.status(401).json({ success: false, error: "Unauthorized" });
     }
 
@@ -58,6 +62,7 @@ export default withSessionRoute(async function handler(
       !isAdmin &&
       !userRole.permissions?.includes("view_activity")
     ) {
+      console.log(`[Profile] Missing view_activity permission for user ${sessionUserId}. Permissions: ${JSON.stringify(userRole.permissions)}`);
       return res.status(401).json({ success: false, error: "Unauthorized" });
     }
   }
