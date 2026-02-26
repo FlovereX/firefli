@@ -210,12 +210,6 @@ export async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
           },
         ],
       });
-      // Removed as secondary workspace creators are NOT the instance owner, which would give them equal access to edit oauth.
-      //await tx.user.update({
-      //where: { userid: req.session.userid },
-      //data: { isOwner: true }
-      //})
-
       return ws;
     });
   } catch (err: any) {
