@@ -9,6 +9,7 @@ import {
   NextApiResponse,
 } from "next";
 import { isUserBlocked, logBlockedAccess } from "@/utils/blocklist";
+import prisma from "@/utils/database";
 
 if (process.env.NODE_ENV === 'production') {
   const secret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
@@ -45,13 +46,33 @@ export function withSessionRoute(handler: NextApiHandler) {
       // @ts-ignore
       logBlockedAccess(req.session.userid, 'active session');
       req.session.destroy();
-      return res.status(401).json({ 
-        success: false, 
+      return res.status(401).json({
+        success: false,
         error: 'Access denied',
         blocked: true
       });
     }
-    
+
+    // Check database ban status
+    // @ts-ignore
+    if (req.session.userid) {
+      try {
+        const dbUser = await prisma.user.findUnique({
+          // @ts-ignore
+          where: { userid: BigInt(req.session.userid) },
+          select: { banned: true }
+        });
+        if (dbUser?.banned) {
+          req.session.destroy();
+          return res.status(401).json({
+            success: false,
+            error: 'Your account has been suspended',
+            banned: true
+          });
+        }
+      } catch {}
+    }
+
     return handler(req, res);
   };
 }
@@ -73,10 +94,7 @@ export function withSessionSsr<
     if (context.req.session.userid && isUserBlocked(context.req.session.userid)) {
       // @ts-ignore
       logBlockedAccess(context.req.session.userid, 'SSR page access');
-      // Destroy the session
       context.req.session.destroy();
-      
-      // Redirect to login page
       return {
         redirect: {
           destination: '/login?error=access_denied',
@@ -84,7 +102,28 @@ export function withSessionSsr<
         },
       };
     }
-    
+
+    // Check database ban status
+    // @ts-ignore
+    if (context.req.session.userid) {
+      try {
+        const dbUser = await prisma.user.findUnique({
+          // @ts-ignore
+          where: { userid: BigInt(context.req.session.userid) },
+          select: { banned: true }
+        });
+        if (dbUser?.banned) {
+          context.req.session.destroy();
+          return {
+            redirect: {
+              destination: '/login?error=account_suspended',
+              permanent: false,
+            },
+          };
+        }
+      } catch {}
+    }
+
     return handler(context as any);
   };
 }

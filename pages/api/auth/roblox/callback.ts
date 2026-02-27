@@ -150,7 +150,7 @@ export async function handler(req: NextApiRequest, res: NextApiResponse) {
 		const username = userInfo.preferred_username || userInfo.name;
 		const displayName = userInfo.nickname || username;
 		try {
-		await prisma.user.upsert({
+		const upsertedUser = await prisma.user.upsert({
 			where: {
 				userid: BigInt(userId),
 			},
@@ -165,7 +165,12 @@ export async function handler(req: NextApiRequest, res: NextApiResponse) {
 				picture: thumbnail,
 				registered: true,
 			},
+			select: { banned: true },
 		});
+
+		if (upsertedUser.banned) {
+			return res.redirect('/login?error=account_suspended');
+		}
 
 		req.session.userid = userId;
 		clearLoginAttempts(userId);

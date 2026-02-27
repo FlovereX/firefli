@@ -118,6 +118,7 @@ type DatabaseUser = {
     workspaceGroupId: number;
   }[];
   isOwner: boolean;
+  banned: boolean;
 };
 
 type DatabaseResponse = DatabaseUser | { error: string };
@@ -217,6 +218,7 @@ export async function handler(
           info: true,
           roles: true,
           isOwner: true,
+          banned: true,
         },
       })
       .catch((error) => {
@@ -234,6 +236,12 @@ export async function handler(
         error:
           "Database service is temporarily unavailable. Please try again later.",
       });
+    }
+
+    if (user && !("error" in user) && user.banned) {
+      return res
+        .status(403)
+        .json({ success: false, error: "Your account has been suspended" });
     }
 
     if (!user || !user.info?.passwordhash) {

@@ -40,6 +40,11 @@ export default function AuthProvider({
 					setLoading(false);
 					return;
 				}
+				if (err.response?.data.banned || err.response?.data.error === 'Your account has been suspended') {
+					Router.push('/login?error=account_suspended');
+					setLoading(false);
+					return;
+				}
 				setLoading(false);
 			}
 		};

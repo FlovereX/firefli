@@ -100,9 +100,12 @@ const Login: NextPage = () => {
         case 'database_error': 
           message = 'Database error during login. Please try again.'; 
           break; 
-        case 'oauth_failed': 
-          message = 'OAuth authentication failed. Please check your credentials and try again.'; 
-          break; 
+        case 'oauth_failed':
+          message = 'OAuth authentication failed. Please check your credentials and try again.';
+          break;
+        case 'account_suspended':
+          message = 'Your account has been suspended. Please contact support for an appeal.';
+          break;
       } 
       
       toast.error(message, { 

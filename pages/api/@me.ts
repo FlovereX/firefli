@@ -68,6 +68,11 @@ export async function handler(
 		getUsername(userId),
 		getDisplayName(userId)
 	]);
+
+	if (dbuser?.banned) {
+		req.session.destroy();
+		return res.status(401).json({ success: false, error: 'Your account has been suspended' });
+	}
 	let canMakeWorkspace = false;
 	if (process.env.NEXT_PUBLIC_FIREFLI_LIMIT === 'true') {
 		const limit = 2;

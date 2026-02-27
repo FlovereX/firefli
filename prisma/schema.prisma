@@ -38,6 +38,11 @@ model workspace {
   members             workspaceMember[]
   discordIntegration  DiscordIntegration?
   bloxlinkIntegration BloxlinkIntegration?
+  gameServers         GameServer[]
+  remoteCommands      RemoteCommand[]
+  playerBans          PlayerBan[]
+  playerReports       PlayerReport[]
+  adminMessageLogs    AdminMessageLog[]
 }
 
 model config {
@@ -67,6 +72,10 @@ model user {
   displayName           String?
   birthdayDay           Int?
   birthdayMonth         Int?
+  banned                Boolean                @default(false)
+  bannedAt              DateTime?
+  bannedBy              String?
+  banReason             String?
   adjustmentsMade       ActivityAdjustment[]   @relation("AdjustmentActor")
   adjustmentsReceived   ActivityAdjustment[]   @relation("AdjustmentUser")
   activityHistory       ActivityHistory[]
@@ -770,4 +779,90 @@ model BloxlinkIntegration {
 
   @@index([workspaceGroupId])
   @@index([discordServerId])
+}
+
+model GameServer {
+  id               String    @id @default(uuid()) @db.Uuid
+  jobId            String
+  placeId          BigInt
+  workspaceGroupId Int
+  players          Json
+  playerCount      Int
+  maxPlayers       Int
+  lastHeartbeat    DateTime
+  active           Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  workspace        workspace @relation(fields: [workspaceGroupId], references: [groupId])
+
+  @@unique([workspaceGroupId, jobId])
+  @@index([workspaceGroupId, active])
+  @@index([lastHeartbeat])
+}
+
+model RemoteCommand {
+  id               String    @id @default(uuid()) @db.Uuid
+  workspaceGroupId Int
+  jobId            String
+  commandType      String
+  targetUserId     BigInt?
+  payload          Json
+  status           String    @default("pending")
+  issuedById       BigInt
+  executedAt       DateTime?
+  result           Json?
+  createdAt        DateTime  @default(now())
+  workspace        workspace @relation(fields: [workspaceGroupId], references: [groupId])
+
+  @@index([workspaceGroupId, jobId, status])
+  @@index([workspaceGroupId, createdAt])
+}
+
+model PlayerBan {
+  id               String    @id @default(uuid()) @db.Uuid
+  workspaceGroupId Int
+  userId           BigInt
+  reason           String
+  bannedById       BigInt
+  active           Boolean   @default(true)
+  duration         Int?
+  expiresAt        DateTime?
+  createdAt        DateTime  @default(now())
+  unbannedAt       DateTime?
+  unbannedById     BigInt?
+  workspace        workspace @relation(fields: [workspaceGroupId], references: [groupId])
+
+  @@index([workspaceGroupId, userId, active])
+  @@index([workspaceGroupId, active])
+}
+
+model PlayerReport {
+  id               String    @id @default(uuid()) @db.Uuid
+  workspaceGroupId Int
+  reporterUserId   BigInt
+  reportedUserId   BigInt?
+  reason           String
+  description      String?
+  jobId            String
+  status           String    @default("pending")
+  reviewedById     BigInt?
+  reviewNote       String?
+  resolvedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  workspace        workspace @relation(fields: [workspaceGroupId], references: [groupId])
+
+  @@index([workspaceGroupId, status])
+  @@index([workspaceGroupId, createdAt])
+}
+
+model AdminMessageLog {
+  id               String    @id @default(uuid()) @db.Uuid
+  workspaceGroupId Int
+  sentById         BigInt
+  targetUserId     BigInt?
+  message          String
+  jobId            String
+  createdAt        DateTime  @default(now())
+  workspace        workspace @relation(fields: [workspaceGroupId], references: [groupId])
+
+  @@index([workspaceGroupId, createdAt])
 }
