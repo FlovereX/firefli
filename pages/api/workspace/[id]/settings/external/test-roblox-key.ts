@@ -7,7 +7,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).json({ valid: false, message: "Method not allowed" });
   }
 
-  const { apiKey, groupId } = req.body;
+  const { apiKey, groupId: bodyGroupId } = req.body;
+  const groupId = bodyGroupId || req.query.id;
 
   if (!apiKey || typeof apiKey !== "string") {
     return res.status(400).json({ valid: false, message: "API key is required" });

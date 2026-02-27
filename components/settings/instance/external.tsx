@@ -266,7 +266,7 @@ const ExternalServices: React.FC<ExternalServicesProps> & { title: string } = ({
                       {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ apiKey: robloxApiKey }),
+                        body: JSON.stringify({ apiKey: robloxApiKey, groupId: workspaceId }),
                       }
                     );
                     const data = await response.json();
