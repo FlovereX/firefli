@@ -49,7 +49,7 @@ const Home: NextPage = () => {
         if (err.response?.data?.error === "You are not a high enough rank") {
           methods.setError("groupID", {
             type: "custom",
-            message: "You need to be a rank 10 or higher to create a workspace",
+            message: "You need to be a rank 25 or higher to create a workspace",
           });
         }
         if (err.response?.data?.error === "Workspace already exists") {

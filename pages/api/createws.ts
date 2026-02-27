@@ -80,7 +80,7 @@ export async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
     return res
       .status(400)
       .json({ success: false, error: "You are not a high enough rank" });
-  if (urrole < 10)
+  if (urrole < 25)
     return res
       .status(400)
       .json({ success: false, error: "You are not a high enough rank" });

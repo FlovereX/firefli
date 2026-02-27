@@ -273,7 +273,7 @@ const Login: NextPage = () => {
 			} else if (e?.response?.status === 400 && e?.response?.data?.error?.includes('rank')) {
 				methods.setError("groupid", { 
 					type: "custom", 
-					message: "You must be at least rank 10 in this group" 
+					message: "You must be at least rank 25 in this group" 
 				});
 			} else if (e?.message === 'Request timeout') {
 				toast.error('Request timed out. Please try again.');
