@@ -235,7 +235,7 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
   const [isEditMode, setIsEditMode] = useState(false);
   const [originalViewConfig, setOriginalViewConfig] = useState<any>(null);
   const [mobileViewsOpen, setMobileViewsOpen] = useState(false);
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 12 });
   const [totalUsers, setTotalUsers] = useState(0);
   const [notifyDiscord, setNotifyDiscord] = useState(false);
   const [bloxlinkEnabled, setBloxlinkEnabled] = useState(false);
@@ -1586,9 +1586,9 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
                 return (
                   <div
                     key={row.id}
-                    className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 space-y-3"
+                    className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 space-y-3 overflow-hidden"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       {selectCell && (
                         <div className="flex-shrink-0">
                           {flexRender(
@@ -1598,7 +1598,7 @@ const Views: pageWithLayout<pageProps> = ({ isAdmin, hasManageViewsPerm, hasCrea
                         </div>
                       )}
                       <div
-                        className={`flex items-center gap-2 flex-1 ${hasViewMemberProfiles ? 'cursor-pointer' : 'cursor-default'}`}
+                        className={`flex items-center gap-2 flex-1 min-w-0 ${hasViewMemberProfiles ? 'cursor-pointer' : 'cursor-default'}`}
                         onClick={() => {
                           if (hasViewMemberProfiles) {
                             router.push(
