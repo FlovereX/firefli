@@ -455,6 +455,7 @@ export const getServerSideProps = withPermissionCheckSsr(
     const ubook = await prisma.userBook.findMany({
       where: {
         userId: BigInt(query?.uid as string),
+        workspaceGroupId: parseInt(query.id as string),
       },
       include: {
         admin: {
