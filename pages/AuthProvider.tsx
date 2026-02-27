@@ -23,6 +23,14 @@ export default function AuthProvider({
 	const posthogRef = useRef<any>(null);
 
 	useEffect(() => {
+		const isLoginPage = Router.pathname === '/login';
+
+		// Don't check auth if already on the login page — avoids stripping query params
+		if (isLoginPage) {
+			setLoading(false);
+			return;
+		}
+
 		const checkLogin = async () => {
 			try {
 				const req = await axios.get('/api/@me');
@@ -35,13 +43,13 @@ export default function AuthProvider({
 					setLoading(false);
 					return;
 				}
-				if (err.response?.data.error === 'Not logged in') {
-					Router.push('/login');
+				if (err.response?.data.banned || err.response?.data.error === 'Your account has been suspended') {
+					Router.push('/login?error=account_suspended');
 					setLoading(false);
 					return;
 				}
-				if (err.response?.data.banned || err.response?.data.error === 'Your account has been suspended') {
-					Router.push('/login?error=account_suspended');
+				if (err.response?.data.error === 'Not logged in') {
+					Router.push('/login');
 					setLoading(false);
 					return;
 				}
