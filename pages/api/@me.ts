@@ -70,7 +70,7 @@ export async function handler(
 	]);
 	let canMakeWorkspace = false;
 	if (process.env.NEXT_PUBLIC_FIREFLI_LIMIT === 'true') {
-		const limit = parseInt(process.env.NEXT_PUBLIC_LIMIT || '1', 10);
+		const limit = 2;
 		const workspaceCount = await prisma.workspace.count({
 			where: { ownerId: BigInt(userId) }
 		});
