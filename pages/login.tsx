@@ -51,6 +51,7 @@ const Login: NextPage = () => {
   );
   const [showPassword, setShowPassword] = useState(false);
   const [showCopyright, setShowCopyright] = useState(false);
+  const [suspendedMessage, setSuspendedMessage] = useState<string | null>(null);
   const [usernameCheckLoading, setUsernameCheckLoading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
     null
@@ -72,50 +73,57 @@ const Login: NextPage = () => {
     isDarkModeRef.current = isDark;
   }, [mounted, theme]);
 
-  useEffect(() => { 
-    if (!router.isReady) return; 
-    
-    const error = router.query.error as string; 
-    if (error) { 
-      let message = 'An error occurred during login.'; 
-      switch (error) { 
-        case 'access_denied': 
-          message = 'Access denied. Your account has been blocked from accessing this system.'; 
-          break; 
-        case 'oauth_error': 
-          message = 'OAuth authentication failed. Please try again.'; 
-          break; 
-        case 'missing_params': 
-          message = 'Missing required authentication parameters.'; 
-          break; 
-        case 'state_mismatch': 
-          message = 'Security verification failed. Please try logging in again.'; 
-          break; 
-        case 'config_error': 
-          message = 'Server configuration error. Please contact an administrator.'; 
-          break; 
-        case 'invalid_user': 
-          message = 'Invalid user information received from Roblox.'; 
-          break; 
-        case 'database_error': 
-          message = 'Database error during login. Please try again.'; 
-          break; 
+  useEffect(() => {
+    if (!router.isReady) return;
+
+    const error = router.query.error as string;
+    if (error) {
+      let message = 'An error occurred during login.';
+      let isSuspended = false;
+      switch (error) {
+        case 'access_denied':
+          message = 'Access denied. Your account has been blocked from accessing this system.';
+          isSuspended = true;
+          break;
+        case 'oauth_error':
+          message = 'OAuth authentication failed. Please try again.';
+          break;
+        case 'missing_params':
+          message = 'Missing required authentication parameters.';
+          break;
+        case 'state_mismatch':
+          message = 'Security verification failed. Please try logging in again.';
+          break;
+        case 'config_error':
+          message = 'Server configuration error. Please contact an administrator.';
+          break;
+        case 'invalid_user':
+          message = 'Invalid user information received from Roblox.';
+          break;
+        case 'database_error':
+          message = 'Database error during login. Please try again.';
+          break;
         case 'oauth_failed':
           message = 'OAuth authentication failed. Please check your credentials and try again.';
           break;
         case 'account_suspended':
           message = 'Your account has been suspended. Please contact support for an appeal.';
+          isSuspended = true;
           break;
-      } 
-      
-      toast.error(message, { 
-        duration: 6000, 
-        position: 'top-center', 
-      }); 
-      
-      router.replace('/login', undefined, { shallow: true }); 
-    } 
-  }, [router.isReady, router.query.error]); 
+      }
+
+      if (isSuspended) {
+        setSuspendedMessage(message);
+      } else {
+        toast.error(message, {
+          duration: 6000,
+          position: 'top-center',
+        });
+      }
+
+      router.replace('/login', undefined, { shallow: true });
+    }
+  }, [router.isReady, router.query.error]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -280,10 +288,8 @@ const Login: NextPage = () => {
       } catch (e: any) {
         setLoading(false);
         if (e.response.status === 403) {
-          toast.error('Access denied. Your account has been blocked from accessing this system.', {
-            duration: 6000,
-            position: 'top-center',
-          });
+          const msg = e.response?.data?.error || 'Your account has been suspended.';
+          setSuspendedMessage(msg);
           return;
         }
         if (e.response.status === 404) {
@@ -426,6 +432,14 @@ const Login: NextPage = () => {
           <div className="absolute top-4 right-4">
             <ThemeToggle />
           </div>
+
+          {suspendedMessage && (
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl">
+              <p className="text-sm font-medium text-red-800 dark:text-red-200 text-center">
+                {suspendedMessage}
+              </p>
+            </div>
+          )}
 
           <div className="mb-6 flex justify-center space-x-8">
             {["login", ...(oauthOnly ? [] : ["signup"])].map((m) => {
