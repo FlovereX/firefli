@@ -54,6 +54,31 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       });
     }
 
+    const [targetUserRankCheck, adminUserRankCheck] = await Promise.all([
+      prisma.rank.findFirst({
+        where: { userId: BigInt(numericUserId), workspaceGroupId: workspaceId },
+      }),
+      prisma.rank.findFirst({
+        where: { userId: adminId, workspaceGroupId: workspaceId },
+      }),
+    ]);
+
+    if (targetUserRankCheck && adminUserRankCheck) {
+      const targetRankNum = Number(targetUserRankCheck.rankId);
+      const adminRankNum = Number(adminUserRankCheck.rankId);
+      if (targetRankNum >= adminRankNum) {
+        const adminMember = await prisma.workspaceMember.findFirst({
+          where: { userId: adminId, workspaceGroupId: workspaceId, isAdmin: true },
+        });
+        if (!adminMember) {
+          return res.status(403).json({
+            success: false,
+            error: "You cannot perform actions on users with equal or higher rank than yours.",
+          });
+        }
+      }
+    }
+
     const userbook = await prisma.userBook.create({
       data: {
         userId: BigInt(numericUserId),

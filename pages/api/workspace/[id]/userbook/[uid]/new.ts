@@ -107,6 +107,36 @@ async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
     });
   }
 
+  const [targetUserRankCheck, adminUserRankCheck] = await Promise.all([
+    prisma.rank.findFirst({
+      where: { userId: BigInt(userId), workspaceGroupId },
+    }),
+    prisma.rank.findFirst({
+      where: { userId: BigInt(req.session.userid), workspaceGroupId },
+    }),
+  ]);
+
+  if (targetUserRankCheck && adminUserRankCheck) {
+    const targetRankNum = Number(targetUserRankCheck.rankId);
+    const adminRankNum = Number(adminUserRankCheck.rankId);
+    if (targetRankNum >= adminRankNum) {
+      const adminMember = await prisma.workspaceMember.findFirst({
+        where: {
+          userId: BigInt(req.session.userid),
+          workspaceGroupId,
+          isAdmin: true,
+        },
+      });
+      if (!adminMember) {
+        return res.status(403).json({
+          success: false,
+          error:
+            "You cannot perform actions on users with equal or higher rank than yours.",
+        });
+      }
+    }
+  }
+
   const rankingProvider = await getRankingProvider(workspaceGroupId);
   const canUseRanking = await hasRankUsersPermission(req, workspaceGroupId);
   let rankBefore: number | null = null;
