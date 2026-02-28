@@ -99,14 +99,14 @@ export default function Birthdays() {
 
   if (usersWithDays.length === 0) {
     return (
-      <div className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-xl shadow-sm p-6 mb-6">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center">
-            <IconGift className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+      <div className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-xl shadow-sm p-4 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <IconGift className="w-5 h-5 text-primary" />
           </div>
           <span className="text-lg font-medium text-zinc-900 dark:text-white">Upcoming Birthdays</span>
         </div>
-        <p className="text-center text-zinc-500 dark:text-zinc-400">No upcoming birthdays in the next 7 days</p>
+        <p className="text-center py-4 text-zinc-500 dark:text-zinc-400">No upcoming birthdays in the next 7 days</p>
       </div>
     );
   }
