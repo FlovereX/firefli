@@ -50,6 +50,18 @@ interface WidgetConfig {
   beta?: boolean;
 }
 
+export interface WidgetLayout {
+  i: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  minW?: number;
+  minH?: number;
+  maxW?: number;
+  maxH?: number;
+}
+
 const Home: pageWithLayout = () => {
   const [login, setLogin] = useRecoilState(loginState)
   const [workspace, setWorkspace] = useRecoilState(workspacestate)
@@ -59,6 +71,33 @@ const Home: pageWithLayout = () => {
   const [refreshing, setRefreshing] = useState(false)
   const [titleVisible, setTitleVisible] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  // Normalize layout so it always matches enabled widgets
+  const layout = useMemo(() => {
+    const widgets = Array.isArray(workspace.settings?.widgets)
+      ? workspace.settings.widgets
+      : []
+    const savedLayout = Array.isArray(workspace.settings?.layout)
+      ? workspace.settings.layout
+      : []
+
+    const savedByWidget = new Map(savedLayout.map((item: WidgetLayout) => [item.i, item]))
+
+    return widgets.map((widget: string, index: number) => {
+      const existing = savedByWidget.get(widget)
+      return {
+        i: widget,
+        x: (index % 2) * 6,
+        y: Math.floor(index / 2) * 4,
+        w: existing?.w || 6,
+        h: existing?.h || 4,
+        minW: existing?.minW || 4,
+        minH: existing?.minH || 3,
+        maxW: existing?.maxW,
+        maxH: existing?.maxH,
+      }
+    })
+  }, [workspace.settings?.widgets, workspace.settings?.layout]);
 
   const widgets: Record<string, WidgetConfig> = {
     wall: {
@@ -88,6 +127,20 @@ const Home: pageWithLayout = () => {
       title: "Documents",
       description: "Latest workspace documents",
       color: "bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20",
+    },
+    new_members: {
+      component: NewToTeam,
+      icon: IconPlus,
+      title: "New Members",
+      description: "Recently joined team members",
+      color: "bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20",
+    },
+    birthdays: {
+      component: Birthdays,
+      icon: IconGift,
+      title: "Birthdays",
+      description: "Upcoming team birthdays",
+      color: "bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20",
     },
   }
 
@@ -167,16 +220,6 @@ const Home: pageWithLayout = () => {
             </div>
           </div>
         </div>
-        {Array.isArray(workspace.settings.widgets) && workspace.settings.widgets.includes("new_members") && (
-          <div className="mb-8 z-0 relative">
-            <NewToTeam />
-          </div>
-        )}
-        {Array.isArray(workspace.settings.widgets) && workspace.settings.widgets.includes("birthdays") && (
-          <div className="mb-8 z-0 relative">
-            <Birthdays />
-          </div>
-        )}
         <div className="mb-8 z-0 relative">
           <StickyNoteAnnouncement />
         </div>
@@ -200,43 +243,54 @@ const Home: pageWithLayout = () => {
             </div>
           </div>
         ) : workspace.settings.widgets.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {workspace.settings.widgets.map((widget, index) => {
-              const widgetConfig = widgets[widget]
-              if (!widgetConfig) return null
-              const Widget = widgetConfig.component
-              const Icon = widgetConfig.icon
-              return (
-                <div
-                  key={widget}
-                  className={clsx(
-                    "bg-white dark:bg-zinc-800 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border border-zinc-100 dark:border-zinc-700",
-                    "transform hover:-translate-y-1",
-                  )}
-                >
-                  <div className={`px-6 py-5 ${widgetConfig.color} border-b border-zinc-100 dark:border-zinc-700`}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm flex items-center justify-center shadow-sm">
-                        <Icon className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <div className="flex flex-row items-center gap-2">
-							<h2 className="text-lg font-bold text-zinc-900 dark:text-white">{widgetConfig.title}</h2>
-							{widgetConfig.beta && <span className="px-1.5 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full">
-								BETA
-							</span>}
-						</div>
-                        <p className="text-sm text-zinc-600 dark:text-zinc-300">{widgetConfig.description}</p>
+          <div className="relative">
+            <div className="grid grid-cols-12 gap-6">
+              {layout.map((item: WidgetLayout) => {
+                const widgetConfig = widgets[item.i]
+                if (!widgetConfig) return null
+                const Widget = widgetConfig.component
+                const Icon = widgetConfig.icon
+                
+                // Map width (4-12) to Tailwind grid column classes
+                const colSpanClass = 
+                  item.w === 12 ? 'col-span-12' :
+                  item.w === 8 ? 'col-span-12 lg:col-span-8' :
+                  item.w === 6 ? 'col-span-12 lg:col-span-6' :
+                  'col-span-12 lg:col-span-4';
+                
+                return (
+                  <div
+                    key={item.i}
+                    className={clsx(
+                      colSpanClass,
+                      "bg-white dark:bg-zinc-800 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border border-zinc-100 dark:border-zinc-700",
+                      "transform hover:-translate-y-1",
+                    )}
+                  >
+                    <div className={`px-6 py-5 ${widgetConfig.color} border-b border-zinc-100 dark:border-zinc-700`}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm flex items-center justify-center shadow-sm">
+                          <Icon className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <div className="flex flex-row items-center gap-2">
+                            <h2 className="text-lg font-bold text-zinc-900 dark:text-white">{widgetConfig.title}</h2>
+                            {widgetConfig.beta && <span className="px-1.5 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full">
+                              BETA
+                            </span>}
+                          </div>
+                          <p className="text-sm text-zinc-600 dark:text-zinc-300">{widgetConfig.description}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="p-6">
-                    <Widget />
+                    <div className="p-6 overflow-auto" style={{ maxHeight: 'calc(100% - 90px)' }}>
+                      <Widget />
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
         ) : (
           <div className="bg-white dark:bg-zinc-800 rounded-2xl shadow-sm p-12 text-center border border-zinc-100 dark:border-zinc-700">

@@ -51,7 +51,18 @@ const workspacestate = atom({
 			noticesEnabled: false,
 			leaderboardEnabled: false,
 			policiesEnabled: false,
-			widgets: [] as string[]
+			widgets: [] as string[],
+			layout: undefined as Array<{
+				i: string;
+				x: number;
+				y: number;
+				w: number;
+				h: number;
+				minW?: number;
+				minH?: number;
+				maxW?: number;
+				maxH?: number;
+			}> | undefined
 		}
 	}
 });
