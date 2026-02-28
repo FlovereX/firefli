@@ -223,7 +223,7 @@ export default function NewToTeam() {
   if (!members.length) {
     return (
       <div className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-xl shadow-sm p-6 mb-6">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-6">
           <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
             <IconUserPlus className="w-5 h-5 text-green-600 dark:text-green-400" />
           </div>
@@ -231,9 +231,7 @@ export default function NewToTeam() {
             New to the Team
           </span>
         </div>
-        <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
-          <p>No new members in the last 7 days</p>
-        </div>
+        <p className="text-center text-zinc-500 dark:text-zinc-400">No new members in the last 7 days</p>
       </div>
     );
   }
