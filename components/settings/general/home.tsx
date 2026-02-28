@@ -75,7 +75,7 @@ const Color: FC<props> = (props) => {
         `/api/workspace/${workspace.groupId}/settings/general/home`,
         {
           widgets: workspace.settings.widgets,
-          layout: showLayoutEditor ? layout : undefined,
+          layout: layout,
         }
       );
       if (res.status === 200) {
@@ -84,7 +84,7 @@ const Color: FC<props> = (props) => {
           ...workspace,
           settings: {
             ...workspace.settings,
-            layout: showLayoutEditor ? layout : workspace.settings.layout,
+            layout: layout,
           },
         });
         triggerToast.success("Updated home");
