@@ -14,6 +14,18 @@ type Data = {
 	widgets?: string[]
 }
 
+export interface WidgetLayout {
+	i: string; // widget id
+	x: number;
+	y: number;
+	w: number;
+	h: number;
+	minW?: number;
+	minH?: number;
+	maxW?: number;
+	maxH?: number;
+}
+
 export default withPermissionCheck(handler, 'workspace_customisation');
 
 export async function handler(
@@ -24,7 +36,48 @@ export async function handler(
 	try {
 		const workspaceId = parseInt(req.query.id as string);
 		const before = await getConfig('home', workspaceId);
-		const after = { widgets: req.body.widgets };
+		const allowedWidgets = new Set(['sessions', 'wall', 'documents', 'notices', 'birthdays', 'new_members']);
+		const requestedWidgets = Array.isArray(req.body?.widgets) ? req.body.widgets : [];
+		const sanitizedWidgets = requestedWidgets.filter((w: unknown): w is string => typeof w === 'string' && allowedWidgets.has(w));
+		
+		// Support both old format (widgets array) and new format (widgets + layout)
+		const after: { widgets: string[]; layout?: WidgetLayout[] } = { 
+			widgets: sanitizedWidgets 
+		};
+		
+		// If layout is provided, store it
+		if (req.body.layout && Array.isArray(req.body.layout)) {
+			const layoutByWidget = new Map<string, WidgetLayout>();
+			for (const item of req.body.layout as WidgetLayout[]) {
+				if (!item || typeof item.i !== 'string' || !allowedWidgets.has(item.i)) continue;
+				layoutByWidget.set(item.i, {
+					i: item.i,
+					x: Number.isFinite(item.x) ? item.x : 0,
+					y: Number.isFinite(item.y) ? item.y : 0,
+					w: [4, 6, 8, 12].includes(item.w) ? item.w : 6,
+					h: Number.isFinite(item.h) && item.h > 0 ? item.h : 4,
+					minW: 4,
+					minH: 3,
+					maxW: 12,
+					maxH: item.maxH,
+				});
+			}
+
+			after.layout = sanitizedWidgets.map((widget: string, index: number) => {
+				const existing = layoutByWidget.get(widget);
+				return existing || {
+					i: widget,
+					x: (index % 2) * 6,
+					y: Math.floor(index / 2) * 4,
+					w: 6,
+					h: 4,
+					minW: 4,
+					minH: 3,
+					maxW: 12,
+				};
+			});
+		}
+		
 		await setConfig('home', after, workspaceId);
 		try { await logAudit(workspaceId, (req as any).session?.userid || null, 'settings.general.home.update', 'home', { before, after }); } catch (e) {}
 		res.status(200).json({ success: true})
