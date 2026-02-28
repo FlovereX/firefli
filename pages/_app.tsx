@@ -3,6 +3,9 @@
 import type React from "react";
 
 import "@/styles/globals.scss";
+import "@/styles/grid-layout.css";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
 import type { AppProps } from "next/app";
 import { workspacestate } from "@/state";
 import { RecoilRoot, useRecoilState, useRecoilValue } from "recoil";
